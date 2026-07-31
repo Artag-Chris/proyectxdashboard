@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, startTransition, FormEvent } from "react";
+import { useState, useEffect, useCallback, useRef, startTransition, FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 
@@ -81,6 +81,11 @@ export default function ConversationPage() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [resolving, setResolving] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [conv?.messages]);
 
   const fetchConversation = useCallback(async () => {
     try {
@@ -141,6 +146,15 @@ export default function ConversationPage() {
       setError("");
       await api.post(`/api/dashboard/conversations/${id}/send`, { text });
       setDraft("");
+      const optimistic: Message = {
+        id: `pending-${Date.now()}`,
+        role: "HUMAN",
+        content: text,
+        createdAt: new Date().toISOString(),
+      };
+      setConv((c) =>
+        c ? { ...c, messages: [...c.messages, optimistic] } : c,
+      );
       await fetchConversation();
     } catch {
       setError("No se pudo enviar el mensaje. Int\u00e9ntalo de nuevo.");
@@ -238,6 +252,8 @@ export default function ConversationPage() {
           </div>
         ))}
       </div>
+
+      <div ref={bottomRef} />
 
       {isEscalated && (
         <form
