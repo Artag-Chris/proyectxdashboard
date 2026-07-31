@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 type ApiEscalation = {
   id: string;
   customerIdentifier: string;
+  customerName: string | null;
   status: string;
   escalationReason: string | null;
   escalatedAt: string | null;
@@ -28,6 +29,7 @@ type Escalation = {
   createdAt: string;
   conversation: {
     customerIdentifier: string;
+    customerName: string | null;
     status: string;
   };
 };
@@ -58,6 +60,7 @@ export default function EscalationsPage() {
           createdAt: e.createdAt,
           conversation: {
             customerIdentifier: e.customerIdentifier,
+            customerName: e.customerName ?? null,
             status: e.status,
           },
         })),
@@ -143,8 +146,15 @@ export default function EscalationsPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium text-sm text-zinc-900">
-                    {esc.conversation?.customerIdentifier ?? esc.customerPhone}
+                    {esc.conversation?.customerName ??
+                      esc.conversation?.customerIdentifier ??
+                      esc.customerPhone}
                   </p>
+                  {esc.conversation?.customerName && (
+                    <p className="text-xs text-zinc-400">
+                      {esc.conversation.customerIdentifier}
+                    </p>
+                  )}
                   <p className="text-sm text-zinc-600 mt-1 line-clamp-2">
                     {esc.reason}
                   </p>

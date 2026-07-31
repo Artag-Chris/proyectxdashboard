@@ -21,6 +21,8 @@ type ApiMessage = {
 type Conversation = {
   id: string;
   customerIdentifier: string;
+  customerName: string | null;
+  unreadCount: number;
   status: string;
   messages: Message[];
 };
@@ -29,6 +31,8 @@ type ApiResponse = {
   conversation: {
     id: string;
     customerIdentifier: string;
+    customerName: string | null;
+    unreadCount: number;
     status: string;
   };
   messages: ApiMessage[];
@@ -94,6 +98,8 @@ export default function ConversationPage() {
       setConv({
         id: res.conversation.id,
         customerIdentifier: res.conversation.customerIdentifier,
+        customerName: res.conversation.customerName ?? null,
+        unreadCount: res.conversation.unreadCount ?? 0,
         status: res.conversation.status,
         messages: res.messages,
       });
@@ -104,17 +110,35 @@ export default function ConversationPage() {
     }
   }, [id]);
 
+  const markRead = useCallback(async () => {
+    try {
+      await api.post(`/api/dashboard/conversations/${id}/read`);
+    } catch {
+      // Marcar leído es best-effort; no bloquea el resto.
+    }
+  }, [id]);
+
   useEffect(() => {
     startTransition(() => { fetchConversation(); });
   }, [fetchConversation]);
 
   useEffect(() => {
-    if (conv?.status !== "ESCALATED") return;
+    markRead();
+    const handleVisibility = () => {
+      if (!document.hidden) markRead();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [markRead]);
+
+  useEffect(() => {
+    if (!conv?.id) return;
 
     let interval: ReturnType<typeof setInterval>;
     function startPolling() {
       interval = setInterval(() => {
         startTransition(() => { fetchConversation(); });
+        if (document.visibilityState === "visible") markRead();
       }, 10000);
     }
     function stopPolling() {
@@ -134,7 +158,7 @@ export default function ConversationPage() {
       stopPolling();
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [conv?.status, conv?.id, fetchConversation]);
+  }, [conv?.id, fetchConversation, markRead]);
 
   const handleSend = async (e: FormEvent) => {
     e.preventDefault();
@@ -207,7 +231,12 @@ export default function ConversationPage() {
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold">{conv.customerIdentifier}</h1>
+          <h1 className="text-xl font-bold">
+            {conv.customerName ?? conv.customerIdentifier}
+          </h1>
+          {conv.customerName && (
+            <p className="text-sm text-zinc-400">{conv.customerIdentifier}</p>
+          )}
           <p className="text-sm text-zinc-500">
             Estado: <span className="capitalize">{conv.status.toLowerCase()}</span>
           </p>

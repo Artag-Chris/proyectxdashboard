@@ -10,7 +10,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user) router.push("/escalations");
+    if (user) router.push("/pendientes");
   }, [user, router]);
 
   if (user) return null;
