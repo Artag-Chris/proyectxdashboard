@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, startTransition, FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
+import { channelBadge } from "@/lib/channel";
 
 type Message = {
   id: string;
@@ -20,6 +21,7 @@ type ApiMessage = {
 
 type Conversation = {
   id: string;
+  channel: string;
   customerIdentifier: string;
   customerName: string | null;
   unreadCount: number;
@@ -30,6 +32,7 @@ type Conversation = {
 type ApiResponse = {
   conversation: {
     id: string;
+    channel: string;
     customerIdentifier: string;
     customerName: string | null;
     unreadCount: number;
@@ -97,6 +100,7 @@ export default function ConversationPage() {
       const res = await api.get<ApiResponse>(`/api/dashboard/conversations/${id}`);
       setConv({
         id: res.conversation.id,
+        channel: res.conversation.channel,
         customerIdentifier: res.conversation.customerIdentifier,
         customerName: res.conversation.customerName ?? null,
         unreadCount: res.conversation.unreadCount ?? 0,
@@ -231,9 +235,16 @@ export default function ConversationPage() {
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold">
-            {conv.customerName ?? conv.customerIdentifier}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold">
+              {conv.customerName ?? conv.customerIdentifier}
+            </h1>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${channelBadge(conv.channel).className}`}
+            >
+              {channelBadge(conv.channel).label}
+            </span>
+          </div>
           {conv.customerName && (
             <p className="text-sm text-zinc-400">{conv.customerIdentifier}</p>
           )}

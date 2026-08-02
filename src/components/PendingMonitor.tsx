@@ -6,6 +6,7 @@ import { isNotificationSupported, notify, playPing } from "@/lib/notifications";
 
 export type PendingItem = {
   id: string;
+  channel: string;
   customerIdentifier: string;
   customerName: string | null;
   status: string;

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, startTransition } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { displayName, type PendingItem, type PendingResponse } from "@/components/PendingMonitor";
+import { channelBadge } from "@/lib/channel";
 
 function formatDate(iso: string | null) {
   if (!iso) return "";
@@ -118,6 +119,11 @@ export default function PendientesPage() {
                     <p className="font-medium text-sm text-zinc-900 truncate">
                       {displayName(item)}
                     </p>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${channelBadge(item.channel).className}`}
+                    >
+                      {channelBadge(item.channel).label}
+                    </span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 shrink-0">
                       {statusLabel(item.status)}
                     </span>

@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback, startTransition } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { channelBadge } from "@/lib/channel";
 
 type ApiEscalation = {
   id: string;
+  channel: string;
   customerIdentifier: string;
   customerName: string | null;
   status: string;
@@ -22,6 +24,7 @@ type ApiResponse = {
 
 type Escalation = {
   id: string;
+  channel: string;
   conversationId: string;
   reason: string;
   urgency: string;
@@ -53,6 +56,7 @@ export default function EscalationsPage() {
       setEscalations(
         res.data.map((e) => ({
           id: e.id,
+          channel: e.channel,
           conversationId: e.id,
           reason: e.escalationReason ?? "",
           urgency: e.urgency.toLowerCase(),
@@ -145,11 +149,18 @@ export default function EscalationsPage() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-medium text-sm text-zinc-900">
-                    {esc.conversation?.customerName ??
-                      esc.conversation?.customerIdentifier ??
-                      esc.customerPhone}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-sm text-zinc-900">
+                      {esc.conversation?.customerName ??
+                        esc.conversation?.customerIdentifier ??
+                        esc.customerPhone}
+                    </p>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${channelBadge(esc.channel).className}`}
+                    >
+                      {channelBadge(esc.channel).label}
+                    </span>
+                  </div>
                   {esc.conversation?.customerName && (
                     <p className="text-xs text-zinc-400">
                       {esc.conversation.customerIdentifier}
