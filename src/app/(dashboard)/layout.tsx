@@ -10,6 +10,7 @@ import { isNotificationSupported, requestNotificationPermission } from "@/lib/no
 const navItems = [
   { href: "/pendientes", label: "Pendientes" },
   { href: "/escalations", label: "Escalaciones" },
+  { href: "/emails", label: "Email" },
   { href: "/knowledge", label: "Conocimiento" },
 ];
 
