@@ -12,6 +12,7 @@ const navItems = [
   { href: "/escalations", label: "Escalaciones" },
   { href: "/emails", label: "Email" },
   { href: "/knowledge", label: "Conocimiento" },
+  { href: "/growth", label: "Growth" },
 ];
 
 export default function DashboardLayout({
