@@ -13,6 +13,7 @@ const navItems = [
   { href: "/emails", label: "Email" },
   { href: "/knowledge", label: "Conocimiento" },
   { href: "/growth", label: "Growth" },
+  { href: "/cv", label: "CV Harness" },
 ];
 
 export default function DashboardLayout({

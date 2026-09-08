@@ -1,0 +1,41 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+/** Polling simple con reintento manual (mismo patrón que el resto del dashboard). */
+export function usePoll<T>(
+  fn: () => Promise<T>,
+  intervalMs: number,
+  deps: unknown[] = [],
+) {
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      try {
+        const value = await fnRef.current();
+        if (alive) {
+          setData(value);
+          setError(null);
+        }
+      } catch (e) {
+        if (alive) setError(e instanceof Error ? e.message : String(e));
+      }
+    };
+    setData(null);
+    void run();
+    const id = window.setInterval(() => void run(), intervalMs);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intervalMs, version, ...deps]);
+
+  return { data, error, reload: () => setVersion((v) => v + 1) };
+}
