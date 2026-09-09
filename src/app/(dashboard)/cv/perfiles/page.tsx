@@ -4,7 +4,15 @@ import { FormEvent, useState } from "react";
 import { cvApi } from "@/lib/cv-api";
 import { Card } from "@/lib/cv-ui";
 import { usePoll } from "@/lib/usePoll";
-import type { ProfileRow, ResumeRow } from "@/lib/cv-types";
+import type { ProfileRow, ResumeRow, SourceRow } from "@/lib/cv-types";
+
+interface ProfileDetail extends ProfileRow {
+  sources: {
+    id: string;
+    enabled: boolean;
+    source: Pick<SourceRow, "id" | "name" | "listUrl" | "kind" | "enabled">;
+  }[];
+}
 
 const STATUS_STYLE: Record<string, string> = {
   PENDING: "bg-gray-100 text-gray-600",
@@ -30,6 +38,24 @@ export default function CvPerfiles() {
     5000,
     [profile?.id],
   );
+  // Sitios guardados (todos) y selección del perfil actual.
+  const { data: allSources } = usePoll<SourceRow[]>(() => cvApi.get("/sources"), 30000);
+  const { data: detail, reload: reloadDetail } = usePoll<ProfileDetail | null>(
+    () => (profile ? cvApi.get(`/profiles/${profile.id}`) : Promise.resolve(null)),
+    30000,
+    [profile?.id],
+  );
+  const selectedIds = new Set((detail?.sources ?? []).map((s) => s.source.id));
+
+  async function toggleSite(sourceId: string, checked: boolean) {
+    if (!profile) return;
+    if (checked) {
+      await cvApi.patch(`/profiles/${profile.id}/sources/${sourceId}`, { enabled: true });
+    } else {
+      await cvApi.del(`/profiles/${profile.id}/sources/${sourceId}`);
+    }
+    reloadDetail();
+  }
 
   async function action(label: string, fn: () => Promise<unknown>) {
     setBusy(true);
@@ -171,6 +197,37 @@ export default function CvPerfiles() {
                 {" · "}
                 {profile._count.sources} fuente(s)
               </p>
+            </Card>
+
+            <Card>
+              <h2 className="text-sm font-semibold text-emerald-700">Sitios que vigila este perfil</h2>
+              <p className="mt-1 text-xs text-zinc-500">
+                URLs guardadas en la base de datos. El cron del perfil recorre las seleccionadas.
+              </p>
+              <div className="mt-2 flex max-h-56 flex-col gap-1 overflow-auto pr-1">
+                {(allSources ?? []).length === 0 && (
+                  <p className="text-xs text-zinc-400">Guardá sitios desde «Fuentes».</p>
+                )}
+                {(allSources ?? []).map((s) => {
+                  const checked = selectedIds.has(s.id);
+                  return (
+                    <label
+                      key={s.id}
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-200 px-2 py-1.5 text-sm hover:bg-zinc-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => void toggleSite(s.id, e.target.checked)}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">{s.name}</span>
+                        <span className="block truncate text-xs text-zinc-400">{s.listUrl}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
             </Card>
 
             <Card>

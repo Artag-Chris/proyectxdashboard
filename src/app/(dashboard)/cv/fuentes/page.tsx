@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { cvApi } from "@/lib/cv-api";
 import { usePoll } from "@/lib/usePoll";
-import type { ProfileRow, SourceRow, SourceTemplate } from "@/lib/cv-types";
+import type { SourceRow, SourceTemplate } from "@/lib/cv-types";
 
 export default function CvFuentes() {
   const { data, error, reload } = usePoll<SourceRow[]>(() => cvApi.get("/sources"), 15000);
@@ -11,7 +11,6 @@ export default function CvFuentes() {
     () => cvApi.get("/sources/templates"),
     60000,
   );
-  const { data: profiles } = usePoll<ProfileRow[]>(() => cvApi.get("/profiles"), 60000);
 
   const [showForm, setShowForm] = useState(false);
   const [msg, setMsg] = useState("");
@@ -19,7 +18,6 @@ export default function CvFuentes() {
   const [name, setName] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [listUrl, setListUrl] = useState("");
-  const [profileId, setProfileId] = useState("");
 
   async function toggle(s: SourceRow) {
     await cvApi.patch(`/sources/${s.id}`, { enabled: !s.enabled });
@@ -45,10 +43,9 @@ export default function CvFuentes() {
         name: name.trim(),
         templateId,
         listUrl: listUrl.trim(),
-        profileId: profileId || null,
         intervalMinutes: 1440,
       });
-      setMsg(`Fuente creada: ${created.name}.`);
+      setMsg(`Sitio guardado: ${created.name}. Asignalo a un perfil desde «Perfiles & CV».`);
       setName("");
       setListUrl("");
       setShowForm(false);
@@ -110,20 +107,8 @@ export default function CvFuentes() {
               {templates.find((t) => t.id === templateId)?.hint}
             </p>
           )}
-          <select
-            value={profileId}
-            onChange={(e) => setProfileId(e.target.value)}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-          >
-            <option value="">Perfil (compartida)</option>
-            {(profiles ?? []).map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
           <button className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500 sm:col-span-2">
-            Crear fuente
+            Guardar sitio
           </button>
         </form>
       )}
@@ -141,11 +126,6 @@ export default function CvFuentes() {
               <div className="flex items-center gap-2">
                 <span className={`h-2 w-2 rounded-full ${s.enabled ? "bg-green-500" : "bg-gray-300"}`} />
                 <span className="font-medium">{s.name}</span>
-                {s.profile && (
-                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
-                    {s.profile.name}
-                  </span>
-                )}
               </div>
               <div className="mt-0.5 truncate text-xs text-zinc-500">{s.listUrl}</div>
               <div className="mt-1 text-xs text-zinc-400">
