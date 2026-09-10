@@ -13,7 +13,7 @@ export default function Home() {
     if (user) router.push("/pendientes");
   }, [user, router]);
 
-  if (user) return null;
+  if (user) return null; 
 
   return (
     <div className="flex h-full items-center justify-center">
