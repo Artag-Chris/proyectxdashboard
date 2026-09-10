@@ -12,6 +12,9 @@ import type { SourceRow, SourceTemplate } from "@/lib/cv-types";
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
+/** Cadencias ofrecidas en horas (el API sigue guardando minutos). */
+const HOUR_OPTIONS = [1, 3, 6, 12, 24, 72];
+
 interface SelectorForm {
   item: string;
   title: string;
@@ -37,6 +40,57 @@ const EMPTY_SELECTORS: SelectorForm = {
   nextPage: "",
   detailDescription: "",
 };
+
+interface LimitsForm {
+  fetchDetail: boolean;
+  maxPages: string;
+  delayMs: string;
+  pageParam: string;
+  respectRobots: boolean;
+  userAgent: string;
+}
+
+const DEFAULT_LIMITS: LimitsForm = {
+  fetchDetail: false,
+  maxPages: "1",
+  delayMs: "1000",
+  pageParam: "",
+  respectRobots: true,
+  userAgent: BROWSER_UA,
+};
+
+/** Deriva el modo "avanzado" si la receta no vino de una plantilla conocida. */
+function selectorsFrom(source: SourceRow): SelectorForm {
+  const s = (source.selectors ?? {}) as Record<string, unknown>;
+  const detail = (s.detail ?? {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  return {
+    item: str(s.item),
+    title: str(s.title),
+    company: str(s.company),
+    location: str(s.location),
+    salary: str(s.salary),
+    postedAt: str(s.postedAt),
+    applyUrl: str(s.applyUrl),
+    description: str(s.description),
+    nextPage: str(s.nextPage),
+    detailDescription: str(detail.description),
+  };
+}
+
+function limitsFrom(source: SourceRow): LimitsForm {
+  const l = (source.limits ?? {}) as Record<string, unknown>;
+  const s = (source.selectors ?? {}) as Record<string, unknown>;
+  const str = (v: unknown, fallback = "") => (v == null ? fallback : String(v));
+  return {
+    fetchDetail: Boolean(s.fetchDetail),
+    maxPages: str(l.maxPages, "1"),
+    delayMs: str(l.delayMs, "1000"),
+    pageParam: str(l.pageParam),
+    respectRobots: l.respectRobots === undefined ? true : Boolean(l.respectRobots),
+    userAgent: str(l.userAgent, BROWSER_UA),
+  };
+}
 
 function Field({
   label,
@@ -75,6 +129,7 @@ export default function CvFuentes() {
   );
 
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState(false);
   const [msg, setMsg] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -83,18 +138,46 @@ export default function CvFuentes() {
   const [name, setName] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [listUrl, setListUrl] = useState("");
-  const [intervalMinutes, setIntervalMinutes] = useState("1440");
+  const [hours, setHours] = useState("24");
 
   const [sel, setSel] = useState<SelectorForm>(EMPTY_SELECTORS);
-  const [fetchDetail, setFetchDetail] = useState(false);
-  const [maxPages, setMaxPages] = useState("1");
-  const [delayMs, setDelayMs] = useState("1000");
-  const [pageParam, setPageParam] = useState("");
-  const [respectRobots, setRespectRobots] = useState(true);
-  const [userAgent, setUserAgent] = useState(BROWSER_UA);
+  const [lim, setLim] = useState<LimitsForm>(DEFAULT_LIMITS);
 
   const setSelector = (key: keyof SelectorForm) => (v: string) =>
     setSel((prev) => ({ ...prev, [key]: v }));
+  const setLimit = (key: keyof LimitsForm) => (v: string | boolean) =>
+    setLim((prev) => ({ ...prev, [key]: v }));
+
+  function resetForm() {
+    setEditingId(null);
+    setAdvanced(false);
+    setName("");
+    setTemplateId("");
+    setListUrl("");
+    setHours("24");
+    setSel(EMPTY_SELECTORS);
+    setLim(DEFAULT_LIMITS);
+  }
+
+  function openCreate() {
+    resetForm();
+    setMsg("");
+    setShowForm(true);
+  }
+
+  function openEdit(s: SourceRow) {
+    setEditingId(s.id);
+    setName(s.name);
+    setListUrl(s.listUrl);
+    setHours(String(Math.max(1, Math.round(s.intervalMinutes / 60))));
+    setTemplateId("");
+    // Una fuente existente se edita con su receta tal cual está guardada.
+    setAdvanced(true);
+    setSel(selectorsFrom(s));
+    setLim(limitsFrom(s));
+    setMsg("");
+    setShowForm(true);
+  }
 
   async function toggle(s: SourceRow) {
     await cvApi.patch(`/sources/${s.id}`, { enabled: !s.enabled });
@@ -124,15 +207,15 @@ export default function CvFuentes() {
       ...(sel.applyUrl.trim() && { applyUrl: sel.applyUrl.trim() }),
       ...(sel.description.trim() && { description: sel.description.trim() }),
       ...(sel.nextPage.trim() && { nextPage: sel.nextPage.trim() }),
-      fetchDetail,
-      ...(fetchDetail &&
+      fetchDetail: lim.fetchDetail,
+      ...(lim.fetchDetail &&
         sel.detailDescription.trim() && {
           detail: { description: sel.detailDescription.trim() },
         }),
     };
   }
 
-  async function create(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     const trimmedName = name.trim();
     const trimmedUrl = listUrl.trim();
@@ -150,30 +233,31 @@ export default function CvFuentes() {
     const payload: Record<string, unknown> = {
       name: trimmedName,
       listUrl: trimmedUrl,
-      intervalMinutes: Math.max(5, Number(intervalMinutes) || 1440),
+      intervalMinutes: Math.max(5, Math.round((Number(hours) || 24) * 60)),
     };
     if (advanced) {
       payload.selectors = recipePayload();
       payload.limits = {
-        maxPages: Math.max(1, Number(maxPages) || 1),
-        delayMs: Math.max(0, Number(delayMs) || 0),
+        maxPages: Math.max(1, Number(lim.maxPages) || 1),
+        delayMs: Math.max(0, Number(lim.delayMs) || 0),
         timeoutMs: 20000,
-        userAgent: userAgent.trim() || BROWSER_UA,
-        respectRobots,
-        ...(pageParam.trim() && { pageParam: pageParam.trim() }),
+        userAgent: lim.userAgent.trim() || BROWSER_UA,
+        respectRobots: lim.respectRobots,
+        ...(lim.pageParam.trim() && { pageParam: lim.pageParam.trim() }),
       };
     } else {
       payload.templateId = templateId;
     }
 
     try {
-      const created = await cvApi.post<SourceRow>("/sources", payload);
-      setMsg(`Sitio guardado: ${created.name}. Asignalo a un perfil desde «Perfiles & CV».`);
-      setName("");
-      setListUrl("");
-      setPageParam("");
-      setSel(EMPTY_SELECTORS);
-      setFetchDetail(false);
+      if (editingId) {
+        await cvApi.patch(`/sources/${editingId}`, payload);
+        setMsg(`Fuente «${trimmedName}» actualizada. Corré «Correr ahora» para probarla.`);
+      } else {
+        const created = await cvApi.post<SourceRow>("/sources", payload);
+        setMsg(`Sitio guardado: ${created.name}. Asignalo a un perfil desde «Perfiles & CV».`);
+      }
+      resetForm();
       setShowForm(false);
       reload();
     } catch (err) {
@@ -191,7 +275,14 @@ export default function CvFuentes() {
           </span>
         </div>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) {
+              setShowForm(false);
+              resetForm();
+            } else {
+              openCreate();
+            }
+          }}
           className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500"
         >
           {showForm ? "Cerrar" : "+ Nueva fuente"}
@@ -200,9 +291,13 @@ export default function CvFuentes() {
 
       {showForm && (
         <form
-          onSubmit={create}
+          onSubmit={submit}
           className="mb-4 space-y-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
         >
+          <p className="text-sm font-semibold text-emerald-700">
+            {editingId ? "Editar fuente" : "Nueva fuente"}
+          </p>
+
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input
               value={name}
@@ -211,17 +306,20 @@ export default function CvFuentes() {
               required
               className="rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
-            <div className="flex gap-2">
-              <input
-                value={intervalMinutes}
-                onChange={(e) => setIntervalMinutes(e.target.value)}
-                inputMode="numeric"
-                title="Cada cuántos minutos revisa esta fuente"
-                placeholder="Cadencia (min)"
-                className="w-32 rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-              <span className="self-center text-xs text-zinc-400">min entre corridas</span>
-            </div>
+            <label className="flex items-center gap-2 text-sm text-zinc-600">
+              Revisar cada
+              <select
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                className="rounded-lg border border-zinc-300 px-2 py-2 text-sm"
+              >
+                {HOUR_OPTIONS.map((h) => (
+                  <option key={h} value={String(h)}>
+                    {h} h
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <input
@@ -290,27 +388,27 @@ export default function CvFuentes() {
                   label="Selector de cada vacante"
                   value={sel.item}
                   onChange={setSelector("item")}
-                  placeholder="article.box_offer"
+                  placeholder="div.result-item"
                   required
                 />
                 <Field
                   label="Título"
                   value={sel.title}
                   onChange={setSelector("title")}
-                  placeholder="h2 a"
+                  placeholder="a.offer-title"
                   required
                 />
                 <Field
                   label="URL de la oferta"
                   value={sel.applyUrl}
                   onChange={setSelector("applyUrl")}
-                  placeholder="h2 a"
+                  placeholder="a.offer-title"
                 />
                 <Field
                   label="Empresa"
                   value={sel.company}
                   onChange={setSelector("company")}
-                  placeholder="a.company"
+                  placeholder="span.company"
                 />
                 <Field
                   label="Ubicación"
@@ -322,7 +420,7 @@ export default function CvFuentes() {
                   label="Salario"
                   value={sel.salary}
                   onChange={setSelector("salary")}
-                  placeholder="span.salary"
+                  placeholder="div.salary"
                 />
                 <Field
                   label="Fecha de publicación"
@@ -346,29 +444,33 @@ export default function CvFuentes() {
 
               <p className="text-xs text-zinc-500">
                 Si la descripción ya viene en la tarjeta del listado, ponela arriba y dejá
-                desmarcado «Bajar la página de detalle» (evita un request extra por vacante).
+                desmarcado «bajar cada detalle» (evita un request extra por vacante).
               </p>
 
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 <Field
                   label="Máx. páginas"
-                  value={maxPages}
-                  onChange={setMaxPages}
+                  value={lim.maxPages}
+                  onChange={setLimit("maxPages")}
                   placeholder="1"
                 />
                 <Field
                   label="Pausa entre requests (ms)"
-                  value={delayMs}
-                  onChange={setDelayMs}
+                  value={lim.delayMs}
+                  onChange={setLimit("delayMs")}
                   placeholder="1000"
                 />
                 <Field
                   label="Parámetro de paginación"
-                  value={pageParam}
-                  onChange={setPageParam}
+                  value={lim.pageParam}
+                  onChange={setLimit("pageParam")}
                   placeholder="page"
                 />
-                <Field label="User-Agent" value={userAgent} onChange={setUserAgent} />
+                <Field
+                  label="User-Agent"
+                  value={lim.userAgent}
+                  onChange={setLimit("userAgent")}
+                />
               </div>
 
               <p className="text-xs text-zinc-500">
@@ -381,22 +483,22 @@ export default function CvFuentes() {
                 <label className="flex items-center gap-2 text-xs text-zinc-600">
                   <input
                     type="checkbox"
-                    checked={fetchDetail}
-                    onChange={(e) => setFetchDetail(e.target.checked)}
+                    checked={lim.fetchDetail}
+                    onChange={(e) => setLimit("fetchDetail")(e.target.checked)}
                   />
                   La descripción no está en el listado: bajar cada detalle
                 </label>
                 <label className="flex items-center gap-2 text-xs text-zinc-600">
                   <input
                     type="checkbox"
-                    checked={respectRobots}
-                    onChange={(e) => setRespectRobots(e.target.checked)}
+                    checked={lim.respectRobots}
+                    onChange={(e) => setLimit("respectRobots")(e.target.checked)}
                   />
                   Respetar robots.txt
                 </label>
               </div>
 
-              {fetchDetail && (
+              {lim.fetchDetail && (
                 <Field
                   label="Selector de la descripción (dentro del detalle)"
                   value={sel.detailDescription}
@@ -407,9 +509,23 @@ export default function CvFuentes() {
             </div>
           )}
 
-          <button className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
-            Guardar sitio
-          </button>
+          <div className="flex gap-2">
+            <button className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
+              {editingId ? "Guardar cambios" : "Guardar sitio"}
+            </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  setMsg("");
+                }}
+                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
       )}
 
@@ -423,7 +539,9 @@ export default function CvFuentes() {
           return (
             <div
               key={s.id}
-              className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm"
+              className={`flex flex-wrap items-start gap-3 rounded-xl border bg-white px-4 py-3 shadow-sm ${
+                editingId === s.id ? "border-emerald-400" : "border-zinc-200"
+              }`}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -432,7 +550,7 @@ export default function CvFuentes() {
                 </div>
                 <div className="mt-0.5 truncate text-xs text-zinc-500">{s.listUrl}</div>
                 <div className="mt-1 text-xs text-zinc-400">
-                  cada {s.intervalMinutes} min · {s._count?.vacancies ?? 0} vacantes
+                  cada {Math.round(s.intervalMinutes / 60)} h · {s._count?.vacancies ?? 0} vacantes
                   {s.lastRunAt ? ` · última ${new Date(s.lastRunAt).toLocaleString("es-CO")}` : ""}
                 </div>
                 {lastRun && (
@@ -456,6 +574,12 @@ export default function CvFuentes() {
                   </pre>
                 )}
               </div>
+              <button
+                onClick={() => openEdit(s)}
+                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500"
+              >
+                Editar
+              </button>
               <button
                 onClick={() => setOpenRecipe(recipeOpen ? null : s.id)}
                 className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-500 hover:bg-zinc-50"
