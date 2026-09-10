@@ -22,7 +22,11 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function CvPerfiles() {
-  const { data: profiles, reload } = usePoll<ProfileRow[]>(() => cvApi.get("/profiles"), 15000);
+  const {
+    data: profiles,
+    reload,
+    error: profilesError,
+  } = usePoll<ProfileRow[]>(() => cvApi.get("/profiles"), 15000);
   const [selected, setSelected] = useState<string | null>(null);
   const [schedule, setSchedule] = useState("");
   const [msg, setMsg] = useState("");
@@ -31,6 +35,12 @@ export default function CvPerfiles() {
   const [pdf, setPdf] = useState<File | null>(null);
   const [txtName, setTxtName] = useState("");
   const [txt, setTxt] = useState("");
+
+  const [showNew, setShowNew] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newHeadline, setNewHeadline] = useState("");
+  const [newSummary, setNewSummary] = useState("");
 
   const profile = profiles?.find((p) => p.id === selected) ?? profiles?.[0] ?? null;
   const { data: resumes, reload: reloadResumes } = usePoll<ResumeRow[]>(
@@ -126,8 +136,133 @@ export default function CvPerfiles() {
     }
   }
 
-  if (!profiles || profiles.length === 0) {
-    return <p className="text-zinc-400">Sin perfiles (corré el seed del harness).</p>;
+  async function createProfile(e: FormEvent) {
+    e.preventDefault();
+    const name = newName.trim();
+    if (!name) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      const created = await cvApi.post<{ id: string }>("/profiles", {
+        name,
+        email: newEmail.trim() || undefined,
+        headline: newHeadline.trim() ? [newHeadline.trim()] : undefined,
+        summary: newSummary.trim() || undefined,
+      });
+      setNewName("");
+      setNewEmail("");
+      setNewHeadline("");
+      setNewSummary("");
+      setShowNew(false);
+      setSelected(created.id);
+      setMsg(`Perfil «${name}» creado — cargale la HV en esta misma pantalla.`);
+      reload();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (profilesError) {
+    return (
+      <div>
+        <h1 className="text-lg font-bold">Perfiles & Hojas de vida</h1>
+        <Card className="mt-3 border-amber-300 bg-amber-50">
+          <p className="text-sm font-medium text-amber-800">
+            No se pudo contactar la API del harness.
+          </p>
+          <p className="mt-1 break-words text-xs text-amber-700">{profilesError}</p>
+          <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-amber-700">
+            <li>
+              <code>NEXT_PUBLIC_CV_API_URL</code> debe ser <b>https://</b> (Vercel es HTTPS y el
+              navegador bloquea http://).
+            </li>
+            <li>El harness debe compartir el JWT_SECRET de atiende.</li>
+          </ul>
+          <button
+            onClick={reload}
+            className="mt-3 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-amber-500"
+          >
+            Reintentar
+          </button>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!profiles) return <p className="text-zinc-400">Cargando perfiles…</p>;
+
+  const newProfileCard = (
+    <Card>
+      <h2 className="text-sm font-semibold text-emerald-700">Nuevo perfil</h2>
+      <p className="mt-1 text-xs text-zinc-500">
+        Un perfil = una persona. Después le cargás su HV y sus sitios.
+      </p>
+      <form onSubmit={createProfile} className="mt-2 space-y-2">
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="Nombre y apellido *"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        />
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <input
+            type="email"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            placeholder="Email (opcional)"
+            className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+          <input
+            value={newHeadline}
+            onChange={(e) => setNewHeadline(e.target.value)}
+            placeholder="Titular (ej. Backend Engineer)"
+            className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+        <textarea
+          value={newSummary}
+          onChange={(e) => setNewSummary(e.target.value)}
+          placeholder="Resumen profesional (opcional)"
+          rows={3}
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        />
+        <div className="flex gap-2">
+          <button
+            disabled={!newName.trim() || busy}
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+          >
+            Crear perfil
+          </button>
+          {profiles.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowNew(false);
+                setMsg("");
+              }}
+              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
+      </form>
+    </Card>
+  );
+
+  if (profiles.length === 0) {
+    return (
+      <div>
+        <h1 className="text-lg font-bold">Perfiles & Hojas de vida</h1>
+        <p className="mt-1 text-sm text-zinc-500">
+          Todavía no hay perfiles. Creá uno para poder cargar la HV de una persona.
+        </p>
+        <div className="mt-4 max-w-xl">{newProfileCard}</div>
+        {msg && <p className="mt-2 max-w-xl text-sm text-emerald-600">{msg}</p>}
+      </div>
+    );
   }
 
   return (
@@ -155,7 +290,18 @@ export default function CvPerfiles() {
             {p.isPrimary && " ★"}
           </button>
         ))}
+        <button
+          onClick={() => {
+            setShowNew((v) => !v);
+            setMsg("");
+          }}
+          className="rounded-lg border border-dashed border-emerald-500 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+        >
+          + Nuevo perfil
+        </button>
       </div>
+
+      {showNew && <div className="mt-3 max-w-xl">{newProfileCard}</div>}
 
       {profile && (
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
