@@ -1,9 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { cvApi } from "@/lib/cv-api";
+import { CvApiError, cvApi } from "@/lib/cv-api";
 import { usePoll } from "@/lib/usePoll";
-import type { SourceRow, SourceTemplate } from "@/lib/cv-types";
+import type { ProbeResult, SourceRow, SourceTemplate } from "@/lib/cv-types";
 
 /**
  * User-Agent por defecto del editor avanzado. Muchos portales (Cloudflare /
@@ -58,6 +58,45 @@ const DEFAULT_LIMITS: LimitsForm = {
   respectRobots: true,
   userAgent: BROWSER_UA,
 };
+
+/** Sugerencia de nombre a partir del host (evita escribir de cero). */
+function suggestName(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
+/** Lleva la propuesta del analizador de URLs al formulario del editor. */
+function selectorsFromProbe(raw: Record<string, unknown>): SelectorForm {
+  const detail = (raw.detail ?? {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  return {
+    item: str(raw.item),
+    title: str(raw.title),
+    company: str(raw.company),
+    location: str(raw.location),
+    salary: str(raw.salary),
+    postedAt: str(raw.postedAt),
+    applyUrl: str(raw.applyUrl),
+    description: str(raw.description),
+    nextPage: str(raw.nextPage),
+    detailDescription: str(detail.description),
+  };
+}
+
+function limitsFromProbe(raw: Record<string, unknown>, selectors: SelectorForm): LimitsForm {
+  const str = (v: unknown, fallback = "") => (v == null ? fallback : String(v));
+  return {
+    fetchDetail: selectors.detailDescription.length > 0,
+    maxPages: str(raw.maxPages, "1"),
+    delayMs: str(raw.delayMs, "1000"),
+    pageParam: str(raw.pageParam),
+    respectRobots: raw.respectRobots === undefined ? true : Boolean(raw.respectRobots),
+    userAgent: str(raw.userAgent, BROWSER_UA),
+  };
+}
 
 /** Deriva el modo "avanzado" si la receta no vino de una plantilla conocida. */
 function selectorsFrom(source: SourceRow): SelectorForm {
@@ -142,6 +181,8 @@ export default function CvFuentes() {
 
   const [sel, setSel] = useState<SelectorForm>(EMPTY_SELECTORS);
   const [lim, setLim] = useState<LimitsForm>(DEFAULT_LIMITS);
+  const [probe, setProbe] = useState<ProbeResult | null>(null);
+  const [probing, setProbing] = useState(false);
 
   const setSelector = (key: keyof SelectorForm) => (v: string) =>
     setSel((prev) => ({ ...prev, [key]: v }));
@@ -157,6 +198,79 @@ export default function CvFuentes() {
     setHours("24");
     setSel(EMPTY_SELECTORS);
     setLim(DEFAULT_LIMITS);
+    setProbe(null);
+  }
+
+  /**
+   * Analiza la URL antes de guardar: el backend intenta plantilla, heurística e
+   * IA sobre el HTML real y devuelve una receta propuesta + una muestra.
+   */
+  async function analyze() {
+    const url = listUrl.trim();
+    if (!url) {
+      setMsg("Pegá primero la URL del listado.");
+      return;
+    }
+    setProbing(true);
+    setProbe(null);
+    setMsg("");
+    try {
+      const result = await cvApi.post<ProbeResult>("/sources/probe", { listUrl: url });
+      setProbe(result);
+      if (result.templateId) {
+        setAdvanced(false);
+        setTemplateId(result.templateId);
+      } else if (result.selectors?.item) {
+        const detected = selectorsFromProbe(result.selectors);
+        setAdvanced(true);
+        setSel(detected);
+        setLim(limitsFromProbe(result.limits, detected));
+      }
+      if (!name.trim()) {
+        const suggested = suggestName(result.finalUrl || url);
+        if (suggested) setName(suggested);
+      }
+      setMsg(
+        result.diagnostics.itemCount > 0
+          ? `Analizado (${result.chosenBy}): ${result.diagnostics.itemCount} vacantes detectadas.`
+          : "Se analizó la URL pero no se detectaron vacantes.",
+      );
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err));
+    } finally {
+      setProbing(false);
+    }
+  }
+
+  /** Borra la fuente; si tiene vacantes, confirma el borrado en cascada. */
+  async function removeSource(s: SourceRow) {
+    const count = s._count?.vacancies ?? 0;
+    const warning = count
+      ? `"${s.name}" tiene ${count} vacantes guardadas.\n\nSe eliminarán también esas vacantes, sus matches y borradores de HV.\n\n¿Borrar igual?`
+      : `¿Borrar la fuente "${s.name}"?`;
+    if (!window.confirm(warning)) return;
+    setBusyId(s.id);
+    setMsg("");
+    try {
+      const res = await cvApi.del<{ deletedVacancies: number }>(`/sources/${s.id}?force=true`);
+      setMsg(
+        res.deletedVacancies > 0
+          ? `Fuente borrada junto con ${res.deletedVacancies} vacantes.`
+          : "Fuente borrada.",
+      );
+      if (editingId === s.id) resetForm();
+      reload();
+    } catch (err) {
+      setMsg(
+        err instanceof CvApiError && err.status === 409
+          ? "No se pudo borrar: la fuente tiene vacantes asociadas."
+          : err instanceof Error
+            ? err.message
+            : String(err),
+      );
+    } finally {
+      setBusyId(null);
+    }
   }
 
   function openCreate() {
@@ -322,13 +436,87 @@ export default function CvFuentes() {
             </label>
           </div>
 
-          <input
-            value={listUrl}
-            onChange={(e) => setListUrl(e.target.value)}
-            placeholder="URL del listado que scrapea el cron"
-            required
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              value={listUrl}
+              onChange={(e) => setListUrl(e.target.value)}
+              placeholder="URL del listado que scrapea el cron"
+              required
+              className="min-w-[16rem] flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <button
+              type="button"
+              onClick={() => void analyze()}
+              disabled={probing || !listUrl.trim()}
+              className="rounded-lg border border-emerald-600 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+            >
+              {probing ? "Analizando…" : "Analizar URL"}
+            </button>
+          </div>
+          <p className="text-xs text-zinc-400">
+            «Analizar URL» descarga el listado y propone los selectores (plantilla, heurística o
+            IA). Vos confirmás antes de guardar.
+          </p>
+
+          {probe && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="rounded-full bg-emerald-600 px-2 py-0.5 font-semibold text-white">
+                  {probe.chosenBy === "plantilla"
+                    ? `plantilla: ${probe.templateId}`
+                    : probe.chosenBy}
+                </span>
+                <span className="text-zinc-600">
+                  {probe.diagnostics.itemCount} vacantes · {probe.diagnostics.itemsWithUrl} con URL
+                  · {probe.diagnostics.itemsWithDescription} con descripción
+                </span>
+                <span className="text-zinc-400">
+                  HTTP {probe.status} · {Math.round(probe.bytes / 1024)} KB
+                </span>
+              </div>
+
+              {probe.diagnostics.warnings.map((w) => (
+                <p key={w} className="mt-1 text-xs text-amber-700">
+                  ⚠ {w}
+                </p>
+              ))}
+
+              {probe.preview.length > 0 && (
+                <div className="mt-2 overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="text-zinc-500">
+                      <tr>
+                        <th className="pr-3 font-medium">Título</th>
+                        <th className="pr-3 font-medium">Empresa</th>
+                        <th className="pr-3 font-medium">Ubicación</th>
+                        <th className="pr-3 font-medium">Salario</th>
+                        <th className="font-medium">Descripción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {probe.preview.map((item, i) => (
+                        <tr key={`${item.url}-${i}`} className="border-t border-emerald-100">
+                          <td className="max-w-[16rem] truncate pr-3 py-1">{item.title}</td>
+                          <td className="max-w-[10rem] truncate pr-3 py-1">{item.company ?? "—"}</td>
+                          <td className="max-w-[10rem] truncate pr-3 py-1">{item.location ?? "—"}</td>
+                          <td className="max-w-[9rem] truncate pr-3 py-1">{item.salary ?? "—"}</td>
+                          <td className="py-1">
+                            {item.descriptionChars > 0 ? `${item.descriptionChars} chars` : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {probe.diagnostics.itemCount === 0 && (
+                <p className="mt-2 text-xs text-red-600">
+                  No se detectaron vacantes. Probá el editor avanzado con selectores a mano.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-3">
             <div className="flex rounded-lg border border-zinc-300 p-0.5 text-xs">
@@ -603,6 +791,13 @@ export default function CvFuentes() {
                 className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-700 disabled:opacity-40"
               >
                 {busyId === s.id ? "…" : "Correr ahora"}
+              </button>
+              <button
+                onClick={() => void removeSource(s)}
+                disabled={busyId === s.id}
+                className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40"
+              >
+                Borrar
               </button>
             </div>
           );

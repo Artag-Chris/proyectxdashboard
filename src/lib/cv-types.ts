@@ -39,6 +39,36 @@ export interface SourceTemplate {
   hint: string;
 }
 
+/** Resultado de analizar una URL (POST /sources/probe). */
+export interface ProbeItem {
+  title: string;
+  url: string;
+  company?: string;
+  location?: string;
+  salary?: string;
+  postedAt?: string;
+  descriptionChars: number;
+}
+
+export interface ProbeResult {
+  listUrl: string;
+  finalUrl: string;
+  status: number;
+  bytes: number;
+  chosenBy: "plantilla" | "heuristica" | "ia";
+  templateId?: string;
+  selectors: Record<string, unknown>;
+  limits: Record<string, unknown>;
+  preview: ProbeItem[];
+  diagnostics: {
+    itemCount: number;
+    itemsWithUrl: number;
+    itemsWithDescription: number;
+    warnings: string[];
+    alternatives: { by: string; itemCount: number; score: number }[];
+  };
+}
+
 export interface ProfileRow {
   id: string;
   name: string;
