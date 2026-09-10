@@ -24,6 +24,9 @@ export interface SourceRow {
   profileId: string | null;
   lastRunAt: string | null;
   nextRunAt: string;
+  /** Receta CSS + límites configurados (editor avanzado / plantilla). */
+  selectors?: Record<string, unknown>;
+  limits?: Record<string, unknown>;
   /** Última corrida del scraper (para diagnosticar fallos: 403, timeout…). */
   runs?: ScrapeRunInfo[];
   _count?: { vacancies: number };
