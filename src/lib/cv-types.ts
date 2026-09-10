@@ -6,6 +6,14 @@ export type VacancyStatus =
   | "APPLIED"
   | "IGNORED";
 
+export interface ScrapeRunInfo {
+  status: "RUNNING" | "OK" | "FAILED";
+  error: string | null;
+  itemsFound: number;
+  itemsNew: number;
+  startedAt: string;
+}
+
 export interface SourceRow {
   id: string;
   name: string;
@@ -16,6 +24,8 @@ export interface SourceRow {
   profileId: string | null;
   lastRunAt: string | null;
   nextRunAt: string;
+  /** Última corrida del scraper (para diagnosticar fallos: 403, timeout…). */
+  runs?: ScrapeRunInfo[];
   _count?: { vacancies: number };
   profile?: { id: string; name: string } | null;
 }

@@ -117,7 +117,9 @@ export default function CvFuentes() {
       {msg && <p className="mb-2 text-sm text-emerald-600">{msg}</p>}
 
       <div className="flex flex-col gap-2">
-        {(data ?? []).map((s) => (
+        {(data ?? []).map((s) => {
+          const lastRun = s.runs?.[0];
+          return (
           <div
             key={s.id}
             className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm"
@@ -132,6 +134,21 @@ export default function CvFuentes() {
                 cada {s.intervalMinutes} min · {s._count?.vacancies ?? 0} vacantes
                 {s.lastRunAt ? ` · última ${new Date(s.lastRunAt).toLocaleString("es-CO")}` : ""}
               </div>
+              {lastRun && (
+                <div className="mt-1 text-xs">
+                  {lastRun.status === "FAILED" ? (
+                    <span className="text-red-600">
+                      ✕ Falló: {lastRun.error ?? "error desconocido"}
+                    </span>
+                  ) : lastRun.status === "RUNNING" ? (
+                    <span className="text-zinc-500">⟳ Corriendo…</span>
+                  ) : (
+                    <span className="text-emerald-600">
+                      ✓ {lastRun.itemsFound} encontradas · {lastRun.itemsNew} nuevas
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             <button
               onClick={() => void toggle(s)}
@@ -152,7 +169,8 @@ export default function CvFuentes() {
               {busyId === s.id ? "…" : "Correr ahora"}
             </button>
           </div>
-        ))}
+          );
+        })}
         {data && data.length === 0 && (
           <p className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-400">
             No hay fuentes. Creá una con «+ Nueva fuente».
