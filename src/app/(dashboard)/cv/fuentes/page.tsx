@@ -20,6 +20,7 @@ interface SelectorForm {
   salary: string;
   postedAt: string;
   applyUrl: string;
+  description: string;
   nextPage: string;
   detailDescription: string;
 }
@@ -32,6 +33,7 @@ const EMPTY_SELECTORS: SelectorForm = {
   salary: "",
   postedAt: "",
   applyUrl: "",
+  description: "",
   nextPage: "",
   detailDescription: "",
 };
@@ -120,6 +122,7 @@ export default function CvFuentes() {
       ...(sel.salary.trim() && { salary: sel.salary.trim() }),
       ...(sel.postedAt.trim() && { postedAt: sel.postedAt.trim() }),
       ...(sel.applyUrl.trim() && { applyUrl: sel.applyUrl.trim() }),
+      ...(sel.description.trim() && { description: sel.description.trim() }),
       ...(sel.nextPage.trim() && { nextPage: sel.nextPage.trim() }),
       fetchDetail,
       ...(fetchDetail &&
@@ -328,12 +331,23 @@ export default function CvFuentes() {
                   placeholder="span.date"
                 />
                 <Field
+                  label="Descripción (en el listado)"
+                  value={sel.description}
+                  onChange={setSelector("description")}
+                  placeholder="li.item-description"
+                />
+                <Field
                   label="Link «siguiente»"
                   value={sel.nextPage}
                   onChange={setSelector("nextPage")}
                   placeholder='a[rel="next"]'
                 />
               </div>
+
+              <p className="text-xs text-zinc-500">
+                Si la descripción ya viene en la tarjeta del listado, ponela arriba y dejá
+                desmarcado «Bajar la página de detalle» (evita un request extra por vacante).
+              </p>
 
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 <Field
@@ -370,7 +384,7 @@ export default function CvFuentes() {
                     checked={fetchDetail}
                     onChange={(e) => setFetchDetail(e.target.checked)}
                   />
-                  Bajar la página de detalle (descripción completa)
+                  La descripción no está en el listado: bajar cada detalle
                 </label>
                 <label className="flex items-center gap-2 text-xs text-zinc-600">
                   <input
