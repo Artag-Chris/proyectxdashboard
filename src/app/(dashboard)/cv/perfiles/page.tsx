@@ -21,6 +21,22 @@ const STATUS_STYLE: Record<string, string> = {
   FAILED: "bg-red-100 text-red-700",
 };
 
+/** Cadencias del cron del perfil, en HORAS (el API sigue guardando minutos). */
+const PROFILE_HOUR_OPTIONS = [1, 3, 6, 12, 24, 72];
+
+/** Horas del selector → minutos del API. Vacío = desactivado (null). */
+function hoursToMinutes(hours: string): number | null {
+  if (!hours.trim()) return null;
+  const value = Math.round(Number(hours) * 60);
+  if (!Number.isFinite(value)) return null;
+  return Math.max(60, value);
+}
+
+/** Minutos guardados → horas del selector ("" = desactivado). */
+function minutesToHours(minutes: number | null | undefined): string {
+  return minutes ? String(Math.max(1, Math.round(minutes / 60))) : "";
+}
+
 export default function CvPerfiles() {
   const {
     data: profiles,
@@ -28,7 +44,10 @@ export default function CvPerfiles() {
     error: profilesError,
   } = usePoll<ProfileRow[]>(() => cvApi.get("/profiles"), 15000);
   const [selected, setSelected] = useState<string | null>(null);
-  const [schedule, setSchedule] = useState("");
+  // Borrador de la cadencia (en horas) anclado al perfil que se está editando.
+  const [scheduleDraft, setScheduleDraft] = useState<{ profileId: string; hours: string } | null>(
+    null,
+  );
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -57,6 +76,18 @@ export default function CvPerfiles() {
   );
   const selectedIds = new Set((detail?.sources ?? []).map((s) => s.source.id));
 
+  // Horas a mostrar en el selector: manda el borrador mientras sea del perfil
+  // actual; al cambiar de perfil se ve el valor guardado de ese perfil.
+  const scheduleHours = minutesToHours(profile?.scheduleMinutes);
+  const schedule =
+    scheduleDraft && scheduleDraft.profileId === profile?.id ? scheduleDraft.hours : scheduleHours;
+  // Opciones: las estándar + la guardada, por si quedó una cadencia vieja en
+  // minutos que no cae en ninguna hora ofrecida (así el selector no sale vacío).
+  const scheduleOptions =
+    scheduleHours && !PROFILE_HOUR_OPTIONS.includes(Number(scheduleHours))
+      ? [...PROFILE_HOUR_OPTIONS, Number(scheduleHours)].sort((a, b) => a - b)
+      : PROFILE_HOUR_OPTIONS;
+
   async function toggleSite(sourceId: string, checked: boolean) {
     if (!profile) return;
     if (checked) {
@@ -83,13 +114,11 @@ export default function CvPerfiles() {
 
   async function saveSchedule() {
     if (!profile) return;
-    const minutes = schedule.trim() ? Math.max(5, Number(schedule)) : null;
-    if (minutes !== null && !Number.isFinite(minutes)) {
-      setMsg("Ingresá minutos (o vacío para desactivar).");
-      return;
-    }
+    const minutes = hoursToMinutes(schedule);
     await action(
-      minutes ? `Cron del perfil: cada ${minutes} min.` : "Cron del perfil desactivado.",
+      minutes
+        ? `Cron del perfil: busca cada ${Math.round(minutes / 60)} h.`
+        : "Cron del perfil desactivado.",
       () => cvApi.patch(`/profiles/${profile.id}/schedule`, { scheduleMinutes: minutes }),
     );
   }
@@ -308,17 +337,27 @@ export default function CvPerfiles() {
           <div className="space-y-4">
             <Card>
               <h2 className="text-sm font-semibold text-emerald-700">Cron del perfil</h2>
+              <p className="mt-1 text-xs text-zinc-500">
+                Cada cuánto se buscan vacantes para <b>{profile.name}</b> en sus sitios.
+              </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <input
-                  type="number"
-                  min={5}
-                  value={schedule}
-                  onChange={(e) => setSchedule(e.target.value)}
-                  placeholder={
-                    profile.scheduleMinutes ? String(profile.scheduleMinutes) : "minutos (vacío = off)"
-                  }
-                  className="w-40 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                <label className="flex items-center gap-2 text-sm text-zinc-600">
+                  Buscar cada
+                  <select
+                    value={schedule}
+                    onChange={(e) =>
+                      setScheduleDraft({ profileId: profile.id, hours: e.target.value })
+                    }
+                    className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+                  >
+                    <option value="">Desactivado</option>
+                    {scheduleOptions.map((h) => (
+                      <option key={h} value={String(h)}>
+                        {h} h
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <button
                   onClick={() => void saveSchedule()}
                   disabled={busy}
@@ -338,8 +377,8 @@ export default function CvPerfiles() {
               </div>
               <p className="mt-2 text-xs text-zinc-500">
                 {profile.scheduleMinutes
-                  ? `Cada ${profile.scheduleMinutes} min · próximo ${profile.nextRunAt ? new Date(profile.nextRunAt).toLocaleString("es-CO") : "—"}`
-                  : "Inactivo: corre cuando sus fuentes vencen o con «Buscar ahora»."}
+                  ? `Cada ${Math.round(profile.scheduleMinutes / 60)} h · próximo ${profile.nextRunAt ? new Date(profile.nextRunAt).toLocaleString("es-CO") : "—"}`
+                  : "Inactivo: igual recibe lo que llegue por la cadencia de sus fuentes, o con «Buscar ahora»."}
                 {" · "}
                 {profile._count.sources} fuente(s)
               </p>
