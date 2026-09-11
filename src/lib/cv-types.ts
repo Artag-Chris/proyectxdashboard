@@ -168,6 +168,24 @@ export interface ResumeDraft {
   version: number;
 }
 
+export interface ResumeExperienceItem {
+  role?: string;
+  company?: string;
+  period?: string;
+  bullets?: string[];
+}
+
+export interface ResumeProjectItem {
+  name?: string;
+  highlights?: string[];
+}
+
+export interface ResumeEducationItem {
+  institution?: string;
+  degree?: string;
+  period?: string;
+}
+
 /**
  * Secciones redactadas por la IA. Se conservan como índices sueltos porque el
  * JSON lo genera el LLM y puede llegar parcial; la plantilla del PDF tolera
@@ -177,9 +195,9 @@ export interface ResumeDraftContent {
   headline?: string;
   summary?: string;
   skills?: string[];
-  experience?: { role?: string; company?: string; period?: string; bullets?: string[] }[];
-  projects?: { name?: string; highlights?: string[] }[];
-  education?: { institution?: string; degree?: string; period?: string }[];
+  experience?: ResumeExperienceItem[];
+  projects?: ResumeProjectItem[];
+  education?: ResumeEducationItem[];
   softSkills?: string[];
   keywords?: string[];
   markdown?: string;
@@ -187,6 +205,14 @@ export interface ResumeDraftContent {
   coverLetter?: string;
   coverLetterSource?: "ia" | "plantilla" | "editada";
   coverLetterUpdatedAt?: string;
+}
+
+/** Respuesta de POST /resumes/:id/refine (reorganización con IA). */
+export interface RefineResponse {
+  id: string;
+  content: ResumeDraftContent;
+  applied: boolean;
+  note: string;
 }
 
 export interface VacancyDetailProfile {

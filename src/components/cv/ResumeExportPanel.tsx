@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { cvApi } from "@/lib/cv-api";
 import { Card } from "@/lib/cv-ui";
 import type {
-  CoverLetterResponse,
   ProfilePdfInfo,
+  RefineResponse,
   ResumeDraftContent,
 } from "@/lib/cv-types";
 import { registerFonts } from "@/lib/pdf/register-fonts";
@@ -18,6 +18,7 @@ import {
   prettyUrl,
   type ResumePdfProfile,
 } from "@/lib/pdf/types";
+import { PdfPreviewModal, type PreviewTab } from "./PdfPreviewModal";
 
 // El motor de PDF toca APIs del navegador: nunca debe renderizarse en el server.
 registerFonts();
@@ -27,23 +28,21 @@ const PDFViewer = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[520px] items-center justify-center text-sm text-zinc-400">
+      <div className="flex h-[420px] items-center justify-center text-sm text-zinc-400">
         Cargando previsualización…
       </div>
     ),
   },
 );
 
-type Tab = "cv" | "carta";
-
 interface Props {
   draftId: string;
-  /** Datos de contacto del perfil (se piden aparte: el detalle no los trae). */
+  /** Perfil dueño del borrador: de ahí salen contacto, idiomas y QR. */
   profileId: string;
   content: ResumeDraftContent;
   vacancyTitle: string;
   company: string | null;
-  /** Cambia cuando el borrador se regenera: refresca el borrador local. */
+  /** Avisa al padre para que refresque (el contenido ya se guardó). */
   onChanged: () => void | Promise<void>;
 }
 
@@ -61,26 +60,32 @@ function fileName(parts: (string | null | undefined)[], fallback: string): strin
 export function ResumeExportPanel({
   draftId,
   profileId,
-  content,
+  content: initialContent,
   vacancyTitle,
   company,
   onChanged,
 }: Props) {
-  const [tab, setTab] = useState<Tab>("cv");
-  const [summary, setSummary] = useState(content.summary ?? "");
-  const [letter, setLetter] = useState(content.coverLetter ?? "");
+  // Copia editable: se persiste al apretar Guardar (o cuando guarda la IA).
+  const [content, setContent] = useState<ResumeDraftContent>(initialContent);
+  const [savedJson, setSavedJson] = useState(() => JSON.stringify(initialContent));
   const [qr, setQr] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfilePdfInfo | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [tab, setTab] = useState<PreviewTab>("cv");
+  const [open, setOpen] = useState(false);
 
   // Datos de contacto del perfil (email, teléfono, enlaces, idiomas).
   useEffect(() => {
     let alive = true;
     cvApi
       .get<ProfilePdfInfo>(`/profiles/${profileId}`)
-      .then((p) => alive && setProfile(p))
-      .catch(() => alive && setProfile(null));
+      .then((p) => {
+        if (alive) setProfile(p);
+      })
+      .catch(() => {
+        if (alive) setProfile(null);
+      });
     return () => {
       alive = false;
     };
@@ -120,42 +125,39 @@ export function ResumeExportPanel({
     [profile],
   );
 
-  // El resumen editado se refleja en la vista previa al instante (aún sin guardar).
-  const pdfContent = useMemo(
-    () => ({ ...content, summary: summary || content.summary }),
-    [content, summary],
-  );
-
   const resumeData = useMemo(
     () => ({
-      content: pdfContent,
+      content,
       profile: pdfProfile,
       // Sin URL de portafolio el QR queda ausente (no se dibuja el bloque).
       qrDataUrl: qrUrl ? qr : null,
       qrLabel: qrUrl ? prettyUrl(qrUrl) : null,
     }),
-    [pdfContent, pdfProfile, qr, qrUrl],
+    [content, pdfProfile, qr, qrUrl],
   );
 
   const letterData = useMemo(
     () => ({
       profile: pdfProfile,
-      coverLetter: letter,
+      coverLetter: content.coverLetter ?? "",
       company,
       vacancyTitle,
       date: formatLongDate(),
     }),
-    [pdfProfile, letter, company, vacancyTitle],
+    [pdfProfile, content.coverLetter, company, vacancyTitle],
   );
 
-  /** Guarda el resumen editado y re-indexa el borrador. */
-  async function saveSummary() {
-    if (!profile) return;
+  const dirty = JSON.stringify(content) !== savedJson;
+  const canRender = !!profile;
+  const hasLetter = !!content.coverLetter?.trim();
+
+  async function save() {
     setBusy(true);
     setMsg("");
     try {
-      await cvApi.patch(`/resumes/${draftId}`, { content: { ...content, summary } });
-      setMsg("Resumen guardado — la vista previa ya lo refleja.");
+      await cvApi.patch(`/resumes/${draftId}`, { content });
+      setSavedJson(JSON.stringify(content));
+      setMsg("Guardado.");
       await onChanged();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
@@ -168,12 +170,21 @@ export function ResumeExportPanel({
     setBusy(true);
     setMsg("");
     try {
-      const res = await cvApi.post<CoverLetterResponse>(`/resumes/${draftId}/cover-letter`);
-      setLetter(res.coverLetter);
+      const res = await cvApi.post<{
+        coverLetter: string;
+        coverLetterSource: ResumeDraftContent["coverLetterSource"];
+      }>(`/resumes/${draftId}/cover-letter`);
+      const next: ResumeDraftContent = {
+        ...content,
+        coverLetter: res.coverLetter,
+        coverLetterSource: res.coverLetterSource,
+      };
+      setContent(next);
+      setSavedJson(JSON.stringify(next));
       setMsg(
         res.coverLetterSource === "ia"
-          ? "Carta generada con IA. Revisala y editala antes de descargar."
-          : "El proveedor de IA no está configurado: se usó una carta base. Editala a tu gusto.",
+          ? "Carta generada con IA. Revisala y editala si hace falta."
+          : "Sin proveedor de IA: se usó una carta base. Editala a tu gusto.",
       );
       await onChanged();
     } catch (e) {
@@ -183,16 +194,20 @@ export function ResumeExportPanel({
     }
   }
 
-  async function saveLetter() {
+  /** La IA reorganiza el boceto completo (el guardado lo hace el servidor). */
+  async function refine(instruction: string) {
     setBusy(true);
     setMsg("");
     try {
-      const res = await cvApi.patch<CoverLetterResponse>(`/resumes/${draftId}/cover-letter`, {
-        coverLetter: letter,
+      const res = await cvApi.post<RefineResponse>(`/resumes/${draftId}/refine`, {
+        instruction,
       });
-      setLetter(res.coverLetter);
-      setMsg("Carta guardada.");
-      await onChanged();
+      if (res.applied) {
+        setContent(res.content);
+        setSavedJson(JSON.stringify(res.content));
+        await onChanged();
+      }
+      setMsg(res.note);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
@@ -201,7 +216,7 @@ export function ResumeExportPanel({
   }
 
   /** Renderiza el documento en el navegador y dispara la descarga. */
-  async function download(kind: Tab) {
+  async function download(kind: PreviewTab) {
     setBusy(true);
     setMsg("");
     try {
@@ -233,129 +248,120 @@ export function ResumeExportPanel({
     }
   }
 
-  const canRender = !!profile;
-
   return (
-    <Card>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-1">
+    <>
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-emerald-700">
+              Hoja de vida y carta
+              {dirty && (
+                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                  sin guardar
+                </span>
+              )}
+            </h2>
+            <p className="mt-0.5 text-xs text-zinc-400">
+              {qrUrl
+                ? `El PDF incluye un QR a ${prettyUrl(qrUrl)}.`
+                : "Sin portafolio en el perfil: el PDF saldrá sin QR."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setOpen(true)}
+              disabled={!canRender}
+              className="rounded-lg border border-emerald-500 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+            >
+              Editar y previsualizar
+            </button>
+            <button
+              onClick={() => void download(tab)}
+              disabled={busy || !canRender}
+              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+            >
+              Descargar PDF
+            </button>
+          </div>
+        </div>
+
+        {msg && <p className="mt-2 text-xs text-emerald-700">{msg}</p>}
+        {!canRender && <p className="mt-2 text-xs text-zinc-400">Cargando datos del perfil…</p>}
+
+        <div className="mt-3 flex flex-wrap gap-1">
           {(
             [
               ["cv", "Hoja de vida"],
               ["carta", "Carta de presentación"],
-            ] as [Tab, string][]
+            ] as [PreviewTab, string][]
           ).map(([value, label]) => (
             <button
               key={value}
               onClick={() => setTab(value)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
                 tab === value
                   ? "bg-emerald-600 text-white"
                   : "border border-zinc-300 text-zinc-600 hover:bg-zinc-100"
               }`}
             >
               {label}
-              {value === "carta" && letter ? " ✓" : ""}
+              {value === "carta" && hasLetter ? " ✓" : ""}
             </button>
           ))}
         </div>
-        <button
-          onClick={() => void download(tab)}
-          disabled={busy || !canRender}
-          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-        >
-          Descargar {tab === "cv" ? "hoja de vida" : "carta"} (PDF)
-        </button>
-      </div>
 
-      {msg && <p className="mt-2 text-xs text-emerald-700">{msg}</p>}
-      {!canRender && (
-        <p className="mt-2 text-xs text-zinc-400">Cargando datos del perfil…</p>
-      )}
-
-      {tab === "cv" ? (
-        <div className="mt-3">
-          <label className="block text-xs font-semibold uppercase tracking-wide text-zinc-400">
-            Resumen (editable — se refleja en el PDF)
-          </label>
-          <textarea
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            rows={4}
-            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-          <div className="mt-1 flex items-center gap-2">
-            <button
-              onClick={() => void saveSummary()}
-              disabled={busy || !canRender}
-              className="rounded-lg border border-emerald-500 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
-            >
-              Guardar resumen
-            </button>
-            {qrUrl ? (
-              <span className="text-xs text-zinc-400">
-                El PDF incluye un QR a {prettyUrl(qrUrl)}
-              </span>
+        <div className="mt-2 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100">
+          {canRender ? (
+            // El visor se omite mientras el modal está abierto: evita dos
+            // instancias del motor de PDF renderizando a la vez.
+            open ? (
+              <div className="flex h-[420px] items-center justify-center text-sm text-zinc-400">
+                Editando en la ventana ampliada…
+              </div>
             ) : (
-              <span className="text-xs text-amber-600">
-                Sin portafolio en el perfil: el PDF saldrá sin QR.
-              </span>
-            )}
-          </div>
+              <PDFViewer width="100%" height={420} showToolbar={false}>
+                {tab === "cv" ? (
+                  <ResumeDocument data={resumeData} />
+                ) : (
+                  <CoverLetterDocument data={letterData} />
+                )}
+              </PDFViewer>
+            )
+          ) : (
+            <div className="flex h-[420px] items-center justify-center text-sm text-zinc-400">
+              Preparando vista previa…
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="mt-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => void generateLetter()}
-              disabled={busy || !canRender}
-              className="rounded-lg border border-emerald-500 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
-            >
-              {letter ? "Regenerar con IA" : "Generar carta con IA"}
-            </button>
-            {letter && (
-              <button
-                onClick={() => void saveLetter()}
-                disabled={busy}
-                className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
-              >
-                Guardar cambios
-              </button>
-            )}
-            {content.coverLetterSource && (
-              <span className="text-xs text-zinc-400">
-                Fuente: {content.coverLetterSource}
-                {content.coverLetterUpdatedAt
-                  ? ` · ${new Date(content.coverLetterUpdatedAt).toLocaleDateString()}`
-                  : ""}
-              </span>
-            )}
-          </div>
-          <textarea
-            value={letter}
-            onChange={(e) => setLetter(e.target.value)}
-            rows={12}
-            placeholder="Generá la carta con IA o escribila acá. Separá los párrafos con una línea vacía."
-            className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-        </div>
-      )}
 
-      <div className="mt-3 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100">
-        {canRender ? (
-          <PDFViewer width="100%" height={560} showToolbar={false}>
-            {tab === "cv" ? (
-              <ResumeDocument data={resumeData} />
-            ) : (
-              <CoverLetterDocument data={letterData} />
-            )}
-          </PDFViewer>
-        ) : (
-          <div className="flex h-[560px] items-center justify-center text-sm text-zinc-400">
-            Preparando vista previa…
-          </div>
+        {tab === "carta" && (
+          <button
+            onClick={() => void generateLetter()}
+            disabled={busy || !canRender}
+            className="mt-2 rounded-lg border border-emerald-500 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+          >
+            {hasLetter ? "Regenerar carta con IA" : "Generar carta con IA"}
+          </button>
         )}
-      </div>
-    </Card>
+      </Card>
+
+      <PdfPreviewModal
+        open={open}
+        onClose={() => setOpen(false)}
+        tab={tab}
+        onTab={setTab}
+        content={content}
+        onChange={setContent}
+        onRefine={refine}
+        resumeData={resumeData}
+        letterData={letterData}
+        onDownload={download}
+        onSave={save}
+        onGenerateLetter={generateLetter}
+        busy={busy}
+        msg={msg}
+        dirty={dirty}
+      />
+    </>
   );
 }

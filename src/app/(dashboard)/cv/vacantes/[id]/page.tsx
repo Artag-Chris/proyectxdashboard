@@ -217,8 +217,10 @@ export default function CvVacanteDetalle() {
           )}
 
           {vac.resume && (
+            // El key NO incluye `version`: si cambiara, el panel se remontaría
+            // y el pop-out de edición se cerraría tras cada guardado.
             <ResumeExportPanel
-              key={`${vac.resume.id}:${vac.resume.version}`}
+              key={vac.resume.id}
               draftId={vac.resume.id}
               profileId={vac.resume.profileId}
               content={vac.resume.content}

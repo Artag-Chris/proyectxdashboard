@@ -84,6 +84,9 @@ export function CoverLetterDocument({ data }: { data: CoverLetterPdfData }) {
 const styles = StyleSheet.create({
   page: {
     backgroundColor: COLORS.white,
+    // Padding superior en todas las páginas: si la carta pasa a una segunda,
+    // el texto no arranca pegado al borde de la hoja.
+    paddingTop: PAGE.paddingTop,
     paddingBottom: PAGE.paddingBottom,
     fontFamily: FONTS.body,
     fontSize: 10,
@@ -94,6 +97,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: PAGE.paddingX,
     paddingTop: 26,
     paddingBottom: 20,
+    // Compensa el padding de la página: la banda sigue pegada al borde.
+    marginTop: -PAGE.paddingTop,
   },
   name: { fontFamily: FONTS.display, fontSize: 22, color: COLORS.white, letterSpacing: 0.4 },
   contact: {

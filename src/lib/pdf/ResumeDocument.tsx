@@ -74,7 +74,7 @@ function SectionTitle({ children }: { children: string }) {
 /** Viñeta dibujada como círculo: la fuente latin no trae glifos de viñeta. */
 function Bullet({ children }: { children: string }) {
   return (
-    <View style={styles.bulletRow} wrap={false}>
+    <View style={styles.bulletRow}>
       <View style={styles.bulletDot} />
       <View style={styles.bulletTextWrap}>
         <PdfText text={sanitizeForPdf(children)} style={styles.bulletText} />
@@ -103,7 +103,11 @@ export function ResumeDocument({ data }: { data: ResumePdfData }) {
       subject="Hoja de vida"
       creator="CV Harness"
     >
-      {/* ── Página 1: perfil, experiencia cronológica, formación y QR ── */}
+      {/*
+        Una sola página en flujo continuo: react-pdf salta a la siguiente cuando
+        el contenido no cabe. Antes había dos páginas fijas y la segunda quedaba
+        casi vacía (el hueco en blanco que se veía).
+      */}
       <Page size={PAGE.size} style={styles.page}>
         <View style={styles.header}>
           <View style={styles.headerRow}>
@@ -114,7 +118,7 @@ export function ResumeDocument({ data }: { data: ResumePdfData }) {
             </View>
             <View style={styles.headerRight}>
               {contacts.map((row, i) => (
-                <View key={i} style={styles.contactRow} wrap={false}>
+                <View key={i} style={styles.contactRow}>
                   <View style={styles.contactIcon}>
                     <Icon name={row.icon} />
                   </View>
@@ -145,7 +149,7 @@ export function ResumeDocument({ data }: { data: ResumePdfData }) {
                 <View>
                   <SectionTitle>Work experience in time</SectionTitle>
                   {experience.map((exp, i) => (
-                    <View key={i} style={styles.expItem} wrap={false}>
+                    <View key={i} style={styles.expItem}>
                       <Text style={styles.expMeta}>
                         {exp.period ? (
                           <Text style={styles.expPeriod}>{sanitizeForPdf(exp.period)}</Text>
@@ -154,7 +158,7 @@ export function ResumeDocument({ data }: { data: ResumePdfData }) {
                         {sanitizeForPdf(exp.company ?? '')}
                       </Text>
                       <Text style={styles.expRole}>{sanitizeForPdf(exp.role ?? '')}</Text>
-                      {(exp.bullets ?? []).slice(0, 3).map((b, j) => (
+                      {(exp.bullets ?? []).map((b, j) => (
                         <PdfText key={j} text={sanitizeForPdf(b)} style={styles.expBullet} />
                       ))}
                     </View>
@@ -180,27 +184,32 @@ export function ResumeDocument({ data }: { data: ResumePdfData }) {
                 <View>
                   <SectionTitle>Academic background</SectionTitle>
                   {education.map((edu, i) => (
-                    <View key={i} style={styles.eduItem} wrap={false}>
+                    <View key={i} style={styles.eduItem}>
                       {edu.period ? (
                         <Text style={styles.eduPeriod}>{sanitizeForPdf(edu.period)}</Text>
                       ) : null}
                       <Text style={styles.eduDegree}>{sanitizeForPdf(edu.degree ?? '')}</Text>
-                      <Text style={styles.eduPlace}>
-                        {sanitizeForPdf(edu.institution ?? '')}
-                      </Text>
+                      <Text style={styles.eduPlace}>{sanitizeForPdf(edu.institution ?? '')}</Text>
                     </View>
                   ))}
                 </View>
               ) : null}
 
+              {softSkills.length > 0 ? (
+                <View>
+                  <SectionTitle>Soft skills</SectionTitle>
+                  {softSkills.map((skill, i) => (
+                    <Bullet key={i}>{skill}</Bullet>
+                  ))}
+                </View>
+              ) : null}
+
               {qrDataUrl ? (
-                <View style={styles.qrBlock} wrap={false}>
+                <View style={styles.qrBlock}>
                   {/* El <Image> de react-pdf no acepta `alt` (no es un <img> del DOM). */}
                   {/* eslint-disable-next-line jsx-a11y/alt-text */}
                   <Image src={qrDataUrl} style={styles.qrImage} />
-                  <Text style={styles.qrLabel}>
-                    {sanitizeForPdf(qrLabel ?? '')}
-                  </Text>
+                  <Text style={styles.qrLabel}>{sanitizeForPdf(qrLabel ?? '')}</Text>
                 </View>
               ) : null}
             </View>
@@ -219,46 +228,35 @@ export function ResumeDocument({ data }: { data: ResumePdfData }) {
             </View>
           ) : null}
 
-          {softSkills.length > 0 ? (
+          {projects.length > 0 ? (
             <View>
-              <SectionTitle>Soft skills</SectionTitle>
-              {softSkills.map((skill, i) => (
-                <Bullet key={i}>{skill}</Bullet>
+              <SectionTitle>Work experience</SectionTitle>
+              {projects.map((project, i) => (
+                <View key={i} style={styles.projectBlock}>
+                  <Text style={styles.projectName}>
+                    {sanitizeForPdf(project.name ?? '').toUpperCase()}
+                  </Text>
+                  {(project.highlights ?? []).map((h, j) => (
+                    <Bullet key={j}>{h}</Bullet>
+                  ))}
+                </View>
               ))}
             </View>
           ) : null}
         </View>
-      </Page>
 
-      {/* ── Páginas siguientes: proyectos como casos de estudio ── */}
-      {projects.length > 0 ? (
-        <Page size={PAGE.size} style={styles.page}>
-          <View style={styles.plainHeader}>
-            <Text style={styles.plainName}>{name}</Text>
-            <Text style={styles.plainMeta}>
-              {[profile.email, profile.phone, profile.location]
-                .filter(Boolean)
-                .map((v) => sanitizeForPdf(v))
-                .join('  ·  ')}
-            </Text>
-            <View style={styles.plainRule} />
+        {/* Pie en todas las páginas: regla fina + nombre y numeración. */}
+        <View style={styles.footer} fixed>
+          <View style={styles.footerRule} />
+          <View style={styles.footerRow}>
+            <Text style={styles.footerName}>{name}</Text>
+            <Text
+              style={styles.footerPage}
+              render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+            />
           </View>
-          <View style={styles.body}>
-            <SectionTitle>Work experience</SectionTitle>
-            {projects.map((project, i) => (
-              <View key={i} style={styles.projectBlock}>
-                <Text style={styles.projectName}>
-                  {sanitizeForPdf(project.name ?? '').toUpperCase()}
-                </Text>
-                {(project.highlights ?? []).map((h, j) => (
-                  <Bullet key={j}>{h}</Bullet>
-                ))}
-              </View>
-            ))}
-          </View>
-          <View style={styles.footerRule} fixed />
-        </Page>
-      ) : null}
+        </View>
+      </Page>
     </Document>
   );
 }
@@ -266,6 +264,9 @@ export function ResumeDocument({ data }: { data: ResumePdfData }) {
 const styles = StyleSheet.create({
   page: {
     backgroundColor: COLORS.white,
+    // El paddingTop se aplica en TODAS las páginas: sin él, el contenido que
+    // salta a la página 2 arrancaba pegado al borde superior (y=0).
+    paddingTop: PAGE.paddingTop,
     paddingBottom: PAGE.paddingBottom,
     fontFamily: FONTS.body,
     fontSize: 9,
@@ -276,6 +277,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: PAGE.paddingX,
     paddingTop: 26,
     paddingBottom: 22,
+    // Compensa el paddingTop de la página: así la banda oscura sigue llegando
+    // al borde de la hoja solo en la primera página.
+    marginTop: -PAGE.paddingTop,
   },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between' },
   // El bloque izquierdo cede ancho antes que el contacto (que no debe cortarse
@@ -315,12 +319,18 @@ const styles = StyleSheet.create({
   },
   body: {
     paddingHorizontal: PAGE.paddingX,
-    paddingTop: PAGE.paddingTop,
   },
+  // Anchos explícitos en %: con flexGrow el texto del cuerpo se desbordaba
+  // sobre la columna derecha (se veía un texto encima de otro).
   columns: { flexDirection: 'row' },
-  mainCol: { flexGrow: 1.95, flexShrink: 1, paddingRight: 20 },
-  sideCol: { flexGrow: 1, flexShrink: 1, paddingLeft: 20, borderLeftWidth: 0.7, borderLeftColor: COLORS.ruleSoft },
-  sectionTitleWrap: { marginTop: 16, marginBottom: 8 },
+  mainCol: { width: '62%', paddingRight: 18 },
+  sideCol: {
+    width: '38%',
+    paddingLeft: 18,
+    borderLeftWidth: 0.7,
+    borderLeftColor: COLORS.ruleSoft,
+  },
+  sectionTitleWrap: { marginTop: 15, marginBottom: 7 },
   sectionTitle: {
     fontFamily: FONTS.bodyBold,
     fontSize: 10.5,
@@ -332,11 +342,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.rule,
     marginTop: 5,
   },
+  // Sin `justify`: el CV original va alineado a la izquierda y justificar en
+  // react-pdf desbordaba el ancho de la columna.
   paragraph: {
     fontFamily: FONTS.body,
     fontSize: 9.3,
     lineHeight: 1.5,
-    textAlign: 'justify',
     color: COLORS.body,
   },
   expItem: { marginBottom: 9 },
@@ -357,7 +368,7 @@ const styles = StyleSheet.create({
   eduDegree: { fontFamily: FONTS.body, fontSize: 9, marginTop: 1, color: COLORS.body },
   eduPlace: { fontFamily: FONTS.body, fontSize: 8.4, color: COLORS.muted, marginTop: 1 },
   qrBlock: {
-    marginTop: 18,
+    marginTop: 16,
     paddingTop: 12,
     borderTopWidth: 0.7,
     borderTopColor: COLORS.ruleSoft,
@@ -390,24 +401,13 @@ const styles = StyleSheet.create({
     marginTop: 4.4,
     marginRight: 6,
   },
-  bulletTextWrap: { flexGrow: 1, flexShrink: 1 },
+  bulletTextWrap: { flexGrow: 1, flexShrink: 1, width: '96%' },
   bulletText: {
     fontFamily: FONTS.body,
-    flexGrow: 1,
-    flexShrink: 1,
     fontSize: 8.8,
     lineHeight: 1.42,
     color: COLORS.body,
   },
-  plainHeader: { paddingHorizontal: PAGE.paddingX, paddingTop: 26 },
-  plainName: {
-    fontFamily: FONTS.display,
-    fontSize: 15,
-    color: COLORS.ink,
-    letterSpacing: 0.3,
-  },
-  plainMeta: { fontFamily: FONTS.mono, fontSize: 7.4, color: COLORS.muted, marginTop: 3 },
-  plainRule: { height: 1.1, backgroundColor: COLORS.ink, marginTop: 8 },
   projectBlock: { marginBottom: 12 },
   projectName: {
     fontFamily: FONTS.bodyBold,
@@ -416,12 +416,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 4,
   },
-  footerRule: {
+  footer: {
     position: 'absolute',
-    bottom: 28,
+    bottom: 24,
     left: PAGE.paddingX,
     right: PAGE.paddingX,
-    height: 0.8,
-    backgroundColor: COLORS.ruleSoft,
   },
+  footerRule: { height: 0.8, backgroundColor: COLORS.ruleSoft, marginBottom: 5 },
+  footerRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  footerName: { fontFamily: FONTS.mono, fontSize: 6.8, color: COLORS.muted },
+  footerPage: { fontFamily: FONTS.mono, fontSize: 6.8, color: COLORS.muted },
 });
