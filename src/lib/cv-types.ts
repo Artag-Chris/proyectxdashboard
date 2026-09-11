@@ -21,7 +21,6 @@ export interface SourceRow {
   listUrl: string;
   enabled: boolean;
   intervalMinutes: number;
-  profileId: string | null;
   lastRunAt: string | null;
   nextRunAt: string;
   /** Receta CSS + límites configurados (editor avanzado / plantilla). */
@@ -30,7 +29,7 @@ export interface SourceRow {
   /** Última corrida del scraper (para diagnosticar fallos: 403, timeout…). */
   runs?: ScrapeRunInfo[];
   _count?: { vacancies: number };
-  profile?: { id: string; name: string } | null;
+  selections?: { id: string; enabled: boolean; profile: { id: string; name: string } }[];
 }
 
 export interface SourceTemplate {
@@ -96,6 +95,15 @@ export interface ResumeRow {
   createdAt: string;
 }
 
+/** Evaluación de UNA vacante por UN perfil (score y HV propios). */
+export interface VacancyProfileInfo {
+  profileId: string;
+  profileName: string;
+  status: string;
+  score: number | null;
+  hasResume: boolean;
+}
+
 export interface VacancyRow {
   id: string;
   title: string;
@@ -103,8 +111,11 @@ export interface VacancyRow {
   location: string | null;
   salary: string | null;
   status: VacancyStatus;
+  /** Con perfil elegido es SU score; sin perfil, el mejor de cualquier perfil. */
   matchScore: number | null;
   source: { id: string; name: string };
+  match: { id: string; score: number; verdict: string } | null;
+  profiles: VacancyProfileInfo[];
 }
 
 export interface VacancyDetail {
@@ -148,6 +159,17 @@ export interface VacancyDetail {
     status: string;
     version: number;
   } | null;
+  /** Una entrada por perfil que evaluó la vacante (match y HV propios). */
+  profiles: VacancyDetailProfile[];
+}
+
+export interface VacancyDetailProfile {
+  profileId: string;
+  profileName: string;
+  status: string;
+  score: number | null;
+  match: VacancyDetail["match"];
+  resume: VacancyDetail["resume"];
 }
 
 export interface NotificationRow {

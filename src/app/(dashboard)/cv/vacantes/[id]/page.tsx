@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cvApi } from "@/lib/cv-api";
 import { Card, Score, StatusBadge } from "@/lib/cv-ui";
@@ -23,6 +23,11 @@ function ListBlock({ title, items }: { title: string; items?: string[] }) {
 
 export default function CvVacanteDetalle() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Perfil cuya evaluación se muestra (llega desde el listado filtrado).
+  const profileId = searchParams.get("profileId") ?? "";
+
   const [vac, setVac] = useState<VacancyDetail | null>(null);
   const [error, setError] = useState("");
   const [summary, setSummary] = useState("");
@@ -31,7 +36,8 @@ export default function CvVacanteDetalle() {
 
   async function load() {
     try {
-      const v = await cvApi.get<VacancyDetail>(`/vacancies/${id}`);
+      const query = profileId ? `?profileId=${profileId}` : "";
+      const v = await cvApi.get<VacancyDetail>(`/vacancies/${id}${query}`);
       setVac(v);
       setSummary((v.resume?.content.summary as string) ?? "");
     } catch (e) {
@@ -42,16 +48,32 @@ export default function CvVacanteDetalle() {
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, profileId]);
 
   if (error) return <p className="text-red-600">{error}</p>;
   if (!vac) return <p className="text-zinc-400">Cargando vacante…</p>;
 
   const applyUrl = (vac.raw.applyUrl as string | undefined) ?? vac.url;
+  // Con un perfil elegido, el estado mostrado es el SUYO (aplicada/ignorada es
+  // por perfil, no global).
+  const scopedProfile = profileId
+    ? (vac.profiles.find((p) => p.profileId === profileId) ?? null)
+    : null;
+  const shownStatus = scopedProfile?.status ?? vac.status;
+
+  function selectProfile(nextProfileId: string) {
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("profileId", nextProfileId);
+    router.replace(`/cv/vacantes/${id}?${next.toString()}`);
+  }
 
   async function setStatus(status: "APPLIED" | "IGNORED") {
     if (!vac) return;
-    await cvApi.post(`/vacancies/${vac.id}/status`, { status });
+    await cvApi.post(`/vacancies/${vac.id}/status`, {
+      status,
+      // Sin perfil, el API solo puede resolverlo si hay un único perfil.
+      ...(profileId ? { profileId } : {}),
+    });
     await load();
   }
 
@@ -79,13 +101,51 @@ export default function CvVacanteDetalle() {
       </Link>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-bold">{vac.title}</h1>
-        <StatusBadge status={vac.status} />
+        <StatusBadge status={shownStatus} />
         <Score score={vac.matchScore} />
       </div>
       <p className="text-sm text-zinc-500">
         {[vac.company, vac.location, vac.salary, vac.modality].filter(Boolean).join(" · ") || "—"}
         <span className="ml-2 text-zinc-400">· {vac.source.name}</span>
       </p>
+
+      {vac.profiles.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-zinc-500">Evaluación de:</span>
+          {vac.profiles.map((p) => {
+            const active = p.profileId === profileId;
+            return (
+              <button
+                key={p.profileId}
+                onClick={() => selectProfile(p.profileId)}
+                className={`rounded-lg border px-2 py-1 text-xs ${
+                  active
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : "border-zinc-300 text-zinc-600 hover:bg-zinc-100"
+                }`}
+              >
+                {p.profileName}
+                {p.score !== null ? ` · ${p.score}%` : " · sin match"}
+              </button>
+            );
+          })}
+          {profileId && (
+            <button
+              onClick={() => router.replace(`/cv/vacantes/${id}`)}
+              className="text-xs text-zinc-400 underline hover:text-zinc-600"
+            >
+              ver el mejor match
+            </button>
+          )}
+        </div>
+      )}
+
+      {scopedProfile && (
+        <p className="mt-2 text-xs text-emerald-700">
+          Mostrando el match y la HV de <b>{scopedProfile.profileName}</b>. El estado
+          aplicada/ignorada también es suyo.
+        </p>
+      )}
 
       <div className="mt-4 flex flex-wrap gap-2">
         <a
@@ -96,20 +156,22 @@ export default function CvVacanteDetalle() {
         >
           Aplicar ↗
         </a>
-        {vac.status !== "APPLIED" && (
+        {shownStatus !== "APPLIED" && (
           <button
             onClick={() => void setStatus("APPLIED")}
             className="rounded-lg border border-violet-300 px-3 py-1.5 text-sm hover:bg-violet-50"
           >
             Marcar aplicada
+            {scopedProfile ? ` (${scopedProfile.profileName})` : ""}
           </button>
         )}
-        {vac.status !== "IGNORED" && (
+        {shownStatus !== "IGNORED" && (
           <button
             onClick={() => void setStatus("IGNORED")}
             className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-500 hover:bg-zinc-50"
           >
             Ignorar
+            {scopedProfile ? ` (${scopedProfile.profileName})` : ""}
           </button>
         )}
       </div>
@@ -136,6 +198,7 @@ export default function CvVacanteDetalle() {
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-emerald-700">
                   Match {vac.match.score}/100 · {vac.match.verdict}
+                  {scopedProfile ? ` · ${scopedProfile.profileName}` : ""}
                 </h2>
               </div>
               <p className="mt-1 text-xs text-zinc-500">
@@ -171,11 +234,22 @@ export default function CvVacanteDetalle() {
             </Card>
           )}
 
+          {vac.match === null && scopedProfile && (
+            <Card>
+              <h2 className="text-sm font-semibold text-emerald-700">Sin evaluación</h2>
+              <p className="mt-2 text-sm text-zinc-500">
+                {scopedProfile.profileName} todavía no tiene un match calculado para esta vacante.
+                Probá «Re-evaluar vacantes» en Perfiles.
+              </p>
+            </Card>
+          )}
+
           {vac.resume && (
             <Card>
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-emerald-700">
                   Borrador de HV · v{vac.resume.version}
+                  {scopedProfile ? ` · ${scopedProfile.profileName}` : ""}
                 </h2>
                 <button
                   onClick={() => void copyMarkdown()}

@@ -7,6 +7,8 @@ import { usePoll } from "@/lib/usePoll";
 import type { ProfileRow, ResumeRow, SourceRow } from "@/lib/cv-types";
 
 interface ProfileDetail extends ProfileRow {
+  email: string | null;
+  summary: string;
   sources: {
     id: string;
     enabled: boolean;
@@ -61,6 +63,13 @@ export default function CvPerfiles() {
   const [newHeadline, setNewHeadline] = useState("");
   const [newSummary, setNewSummary] = useState("");
 
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editHeadline, setEditHeadline] = useState("");
+  const [editSummary, setEditSummary] = useState("");
+  const [editPrimary, setEditPrimary] = useState(false);
+
   const profile = profiles?.find((p) => p.id === selected) ?? profiles?.[0] ?? null;
   const { data: resumes, reload: reloadResumes } = usePoll<ResumeRow[]>(
     () => (profile ? cvApi.get(`/resumes?profileId=${profile.id}`) : Promise.resolve([])),
@@ -90,12 +99,22 @@ export default function CvPerfiles() {
 
   async function toggleSite(sourceId: string, checked: boolean) {
     if (!profile) return;
-    if (checked) {
-      await cvApi.patch(`/profiles/${profile.id}/sources/${sourceId}`, { enabled: true });
-    } else {
-      await cvApi.del(`/profiles/${profile.id}/sources/${sourceId}`);
+    setBusy(true);
+    setMsg("");
+    try {
+      if (checked) {
+        await cvApi.patch(`/profiles/${profile.id}/sources/${sourceId}`, { enabled: true });
+        setMsg("Sitio agregado — se están evaluando sus vacantes ya guardadas…");
+      } else {
+        await cvApi.del(`/profiles/${profile.id}/sources/${sourceId}`);
+        setMsg("Sitio quitado del perfil.");
+      }
+      reloadDetail();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
     }
-    reloadDetail();
   }
 
   async function action(label: string, fn: () => Promise<unknown>) {
@@ -158,6 +177,92 @@ export default function CvPerfiles() {
       setTxt("");
       setTxtName("");
       reloadResumes();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Re-evalúa las vacantes ya guardadas contra este perfil (backfill). */
+  async function runBackfill() {
+    if (!profile) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      const res = await cvApi.post<{ candidates: number; enqueued: number; remaining: number }>(
+        `/profiles/${profile.id}/backfill`,
+      );
+      setMsg(
+        res.enqueued === 0
+          ? "No hay vacantes pendientes de evaluar para este perfil."
+          : `Re-evaluando ${res.enqueued} vacante(s)${
+              res.remaining > 0 ? ` — quedan ${res.remaining}, volvé a correr` : ""
+            }. En unos segundos aparecen en Vacantes.`,
+      );
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Abre el editor con los datos actuales del perfil (sin efectos). */
+  function openEdit() {
+    if (!profile) return;
+    if (!detail) {
+      setMsg("Esperá a que cargue el perfil…");
+      return;
+    }
+    setEditName(detail.name);
+    setEditEmail(detail.email ?? "");
+    setEditHeadline((detail.headline ?? []).join(", "));
+    setEditSummary(detail.summary ?? "");
+    setEditPrimary(detail.isPrimary);
+    setEditOpen(true);
+    setMsg("");
+  }
+
+  async function saveEdit(e: FormEvent) {
+    e.preventDefault();
+    if (!profile) return;
+    if (!editName.trim()) {
+      setMsg("El nombre no puede quedar vacío.");
+      return;
+    }
+    await action("Perfil actualizado.", () =>
+      cvApi.patch(`/profiles/${profile.id}`, {
+        name: editName.trim(),
+        email: editEmail.trim() || null,
+        headline: editHeadline
+          .split(",")
+          .map((h) => h.trim())
+          .filter(Boolean),
+        summary: editSummary,
+        isPrimary: editPrimary,
+      }),
+    );
+    setEditOpen(false);
+    reloadDetail();
+  }
+
+  async function deleteProfile() {
+    if (!profile) return;
+    const c = profile._count;
+    const ok = window.confirm(
+      `¿Borrar el perfil «${profile.name}»?\n\n` +
+        `Se eliminan también: ${c.resumes} HV, ${c.sources} sitio(s) asignado(s) y sus matches y HV generadas.\n` +
+        `Las vacantes NO se borran.\n\nEsta acción no se puede deshacer.`,
+    );
+    if (!ok) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      await cvApi.del(`/profiles/${profile.id}`);
+      setSelected(null);
+      setEditOpen(false);
+      setMsg(`Perfil «${profile.name}» borrado.`);
+      reload();
     } catch (err) {
       setMsg(err instanceof Error ? err.message : String(err));
     } finally {
@@ -336,6 +441,113 @@ export default function CvPerfiles() {
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="space-y-4">
             <Card>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h2 className="text-sm font-semibold text-emerald-700">
+                    Datos del perfil
+                    {profile.isPrimary && (
+                      <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                        primario ★
+                      </span>
+                    )}
+                  </h2>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {detail?.email || "sin email"}
+                    {detail?.summary ? ` · ${detail.summary.slice(0, 90)}…` : ""}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    onClick={openEdit}
+                    disabled={busy}
+                    className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
+                  >
+                    Editar datos
+                  </button>
+                  <button
+                    onClick={() => void runBackfill()}
+                    disabled={busy}
+                    className="rounded-lg border border-emerald-500 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                  >
+                    Re-evaluar vacantes
+                  </button>
+                  <button
+                    onClick={() => void deleteProfile()}
+                    disabled={busy || (profiles?.length ?? 0) <= 1}
+                    title={
+                      (profiles?.length ?? 0) <= 1
+                        ? "Es el único perfil: creá otro antes de borrarlo"
+                        : "Borrar este perfil y todos sus datos"
+                    }
+                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
+                  >
+                    Borrar
+                  </button>
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-zinc-400">
+                «Re-evaluar» vuelve a puntuar las vacantes ya guardadas de sus sitios contra su HV
+                (útil al cargar una HV nueva o al tildar un sitio).
+              </p>
+
+              {editOpen && (
+                <form onSubmit={saveEdit} className="mt-3 space-y-2 border-t border-zinc-100 pt-3">
+                  <input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Nombre y apellido *"
+                    className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      placeholder="Email"
+                      className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <input
+                      value={editHeadline}
+                      onChange={(e) => setEditHeadline(e.target.value)}
+                      placeholder="Titulares separados por coma"
+                      className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <textarea
+                    value={editSummary}
+                    onChange={(e) => setEditSummary(e.target.value)}
+                    placeholder="Resumen profesional"
+                    rows={3}
+                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <label className="flex items-center gap-2 text-xs text-zinc-600">
+                    <input
+                      type="checkbox"
+                      checked={editPrimary}
+                      onChange={(e) => setEditPrimary(e.target.checked)}
+                    />
+                    Es el perfil primario (recibe las vacantes de fuentes que nadie tildó)
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={busy}
+                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                    >
+                      Guardar cambios
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditOpen(false)}
+                      className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              )}
+            </Card>
+
+            <Card>
               <h2 className="text-sm font-semibold text-emerald-700">Cron del perfil</h2>
               <p className="mt-1 text-xs text-zinc-500">
                 Cada cuánto se buscan vacantes para <b>{profile.name}</b> en sus sitios.
@@ -387,7 +599,8 @@ export default function CvPerfiles() {
             <Card>
               <h2 className="text-sm font-semibold text-emerald-700">Sitios que vigila este perfil</h2>
               <p className="mt-1 text-xs text-zinc-500">
-                URLs guardadas en la base de datos. El cron del perfil recorre las seleccionadas.
+                URLs guardadas en la base de datos. Al tildar una, sus vacantes ya guardadas se
+                evalúan enseguida contra la HV de este perfil.
               </p>
               <div className="mt-2 flex max-h-56 flex-col gap-1 overflow-auto pr-1">
                 {(allSources ?? []).length === 0 && (
