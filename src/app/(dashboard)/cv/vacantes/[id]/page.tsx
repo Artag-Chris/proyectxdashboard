@@ -31,6 +31,8 @@ export default function CvVacanteDetalle() {
 
   const [vac, setVac] = useState<VacancyDetail | null>(null);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [forceMsg, setForceMsg] = useState("");
 
   async function load() {
     try {
@@ -74,6 +76,25 @@ export default function CvVacanteDetalle() {
     await load();
   }
 
+  /** Genera la HV aunque el match no llegue al umbral (acción explícita). */
+  async function forceResume() {
+    if (!vac) return;
+    setBusy(true);
+    setForceMsg("");
+    setError("");
+    try {
+      const query = profileId ? `?profileId=${profileId}` : "";
+      await cvApi.post(`/vacancies/${vac.id}/generate-resume${query}`);
+      setForceMsg("Generando la hoja de vida… actualizá en unos segundos.");
+      // El pipeline corre en segundo plano: se refresca para ver el avance.
+      setTimeout(() => void load(), 5000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="max-w-5xl">
       <Link href="/cv/vacantes" className="text-sm text-zinc-500 hover:text-zinc-700">
@@ -87,6 +108,11 @@ export default function CvVacanteDetalle() {
       <p className="text-sm text-zinc-500">
         {[vac.company, vac.location, vac.salary, vac.modality].filter(Boolean).join(" · ") || "—"}
         <span className="ml-2 text-zinc-400">· {vac.source.name}</span>
+        {vac.isManual && (
+          <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
+            Oferta pegada a mano
+          </span>
+        )}
       </p>
 
       {vac.profiles.length > 0 && (
@@ -128,14 +154,20 @@ export default function CvVacanteDetalle() {
       )}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <a
-          href={applyUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500"
-        >
-          Aplicar ↗
-        </a>
+        {applyUrl ? (
+          <a
+            href={applyUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500"
+          >
+            Aplicar ↗
+          </a>
+        ) : (
+          <span className="rounded-lg border border-dashed border-zinc-300 px-3 py-1.5 text-sm text-zinc-400">
+            Sin URL de aplicación (oferta pegada a mano)
+          </span>
+        )}
         {shownStatus !== "APPLIED" && (
           <button
             onClick={() => void setStatus("APPLIED")}
@@ -213,6 +245,24 @@ export default function CvVacanteDetalle() {
                 {scopedProfile.profileName} todavía no tiene un match calculado para esta vacante.
                 Probá «Re-evaluar vacantes» en Perfiles.
               </p>
+            </Card>
+          )}
+
+          {vac.match !== null && vac.resume === null && (
+            <Card>
+              <h2 className="text-sm font-semibold text-emerald-700">Sin hoja de vida todavía</h2>
+              <p className="mt-2 text-sm text-zinc-500">
+                El pipeline solo genera la HV cuando el match supera el umbral. Si querés postular
+                igual, generala a pedido.
+              </p>
+              <button
+                onClick={() => void forceResume()}
+                disabled={busy}
+                className="mt-3 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+              >
+                Generar la hoja de vida
+              </button>
+              {forceMsg && <p className="mt-2 text-xs text-emerald-700">{forceMsg}</p>}
             </Card>
           )}
 

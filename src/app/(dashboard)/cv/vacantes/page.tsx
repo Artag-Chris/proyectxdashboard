@@ -130,6 +130,11 @@ export default function CvVacantes() {
               <div className="truncate text-sm text-zinc-500">
                 {[v.company, v.location, v.salary].filter(Boolean).join(" · ") || "—"}
                 <span className="ml-2 text-xs text-zinc-400">{v.source.name}</span>
+                {v.isManual && (
+                  <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
+                    Manual
+                  </span>
+                )}
               </div>
               {!selectedProfile && v.profiles.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">

@@ -8,6 +8,7 @@ import { getCvSession } from "@/lib/cv-api";
 const TABS = [
   { href: "/cv", label: "Resumen" },
   { href: "/cv/vacantes", label: "Vacantes" },
+  { href: "/cv/pegar", label: "Pegar oferta" },
   { href: "/cv/perfiles", label: "Perfiles & CV" },
   { href: "/cv/fuentes", label: "Fuentes" },
   { href: "/cv/notificaciones", label: "Notificaciones" },

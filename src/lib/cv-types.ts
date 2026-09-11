@@ -116,6 +116,8 @@ export interface VacancyRow {
   source: { id: string; name: string };
   match: { id: string; score: number; verdict: string } | null;
   profiles: VacancyProfileInfo[];
+  /** Oferta pegada a mano (fuente sintética MANUAL), no scrapeada. */
+  isManual?: boolean;
 }
 
 export interface VacancyDetail {
@@ -156,6 +158,16 @@ export interface VacancyDetail {
   resume: ResumeDraft | null;
   /** Una entrada por perfil que evaluó la vacante (match y HV propios). */
   profiles: VacancyDetailProfile[];
+  /** Oferta pegada a mano (fuente sintética MANUAL), no scrapeada. */
+  isManual?: boolean;
+}
+
+/** Respuesta de POST /vacancies/from-text (oferta pegada a mano). */
+export interface ManualIntakeResponse {
+  vacancyId: string;
+  /** true si ya existía una vacante con la misma huella (no se duplicó). */
+  reused: boolean;
+  profileId: string;
 }
 
 /** Borrador de HV generado por la IA (contenido + metadatos). */
