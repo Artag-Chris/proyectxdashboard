@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ResumeExportPanel } from "@/components/cv/ResumeExportPanel";
 import { cvApi } from "@/lib/cv-api";
 import { Card, Score, StatusBadge } from "@/lib/cv-ui";
 import type { VacancyDetail } from "@/lib/cv-types";
@@ -30,16 +31,12 @@ export default function CvVacanteDetalle() {
 
   const [vac, setVac] = useState<VacancyDetail | null>(null);
   const [error, setError] = useState("");
-  const [summary, setSummary] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [msg, setMsg] = useState("");
 
   async function load() {
     try {
       const query = profileId ? `?profileId=${profileId}` : "";
       const v = await cvApi.get<VacancyDetail>(`/vacancies/${id}${query}`);
       setVac(v);
-      setSummary((v.resume?.content.summary as string) ?? "");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -75,23 +72,6 @@ export default function CvVacanteDetalle() {
       ...(profileId ? { profileId } : {}),
     });
     await load();
-  }
-
-  async function saveSummary() {
-    if (!vac?.resume) return;
-    const content = { ...vac.resume.content, summary };
-    await cvApi.patch(`/resumes/${vac.resume.id}`, { content });
-    setMsg("Resumen de la HV guardado.");
-    await load();
-  }
-
-  async function copyMarkdown() {
-    if (!vac?.resume) return;
-    const md = (vac.resume.content.markdown as string | undefined) ?? "";
-    if (!md) return;
-    await navigator.clipboard.writeText(md);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
   }
 
   return (
@@ -223,14 +203,6 @@ export default function CvVacanteDetalle() {
                   {(vac.match.applicationStrategy.keywords ?? []).join(", ")}
                 </p>
               </div>
-              {vac.match.coverLetterDraft && (
-                <div className="mt-3 border-t border-zinc-100 pt-3">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                    Carta de presentación
-                  </div>
-                  <p className="mt-1 text-sm italic text-zinc-600">{vac.match.coverLetterDraft}</p>
-                </div>
-              )}
             </Card>
           )}
 
@@ -245,39 +217,15 @@ export default function CvVacanteDetalle() {
           )}
 
           {vac.resume && (
-            <Card>
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-emerald-700">
-                  Borrador de HV · v{vac.resume.version}
-                  {scopedProfile ? ` · ${scopedProfile.profileName}` : ""}
-                </h2>
-                <button
-                  onClick={() => void copyMarkdown()}
-                  className="rounded-lg border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50"
-                >
-                  {copied ? "¡Copiado!" : "Copiar markdown"}
-                </button>
-              </div>
-              <label className="mt-2 block text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                Resumen (editable)
-              </label>
-              <textarea
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                rows={4}
-                className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-              <button
-                onClick={() => void saveSummary()}
-                className="mt-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500"
-              >
-                Guardar resumen
-              </button>
-              {msg && <p className="mt-1 text-xs text-emerald-600">{msg}</p>}
-              <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-zinc-50 p-3 text-xs leading-relaxed text-zinc-700">
-                {(vac.resume.content.markdown as string | undefined) ?? ""}
-              </pre>
-            </Card>
+            <ResumeExportPanel
+              key={`${vac.resume.id}:${vac.resume.version}`}
+              draftId={vac.resume.id}
+              profileId={vac.resume.profileId}
+              content={vac.resume.content}
+              vacancyTitle={vac.title}
+              company={vac.company}
+              onChanged={load}
+            />
           )}
         </div>
       </div>

@@ -153,14 +153,40 @@ export interface VacancyDetail {
     };
     coverLetterDraft: string | null;
   } | null;
-  resume: {
-    id: string;
-    content: { summary?: string; markdown?: string; headline?: string; skills?: string[] };
-    status: string;
-    version: number;
-  } | null;
+  resume: ResumeDraft | null;
   /** Una entrada por perfil que evaluó la vacante (match y HV propios). */
   profiles: VacancyDetailProfile[];
+}
+
+/** Borrador de HV generado por la IA (contenido + metadatos). */
+export interface ResumeDraft {
+  id: string;
+  /** Perfil dueño del borrador (el PDF usa sus datos de contacto). */
+  profileId: string;
+  content: ResumeDraftContent;
+  status: string;
+  version: number;
+}
+
+/**
+ * Secciones redactadas por la IA. Se conservan como índices sueltos porque el
+ * JSON lo genera el LLM y puede llegar parcial; la plantilla del PDF tolera
+ * campos ausentes.
+ */
+export interface ResumeDraftContent {
+  headline?: string;
+  summary?: string;
+  skills?: string[];
+  experience?: { role?: string; company?: string; period?: string; bullets?: string[] }[];
+  projects?: { name?: string; highlights?: string[] }[];
+  education?: { institution?: string; degree?: string; period?: string }[];
+  softSkills?: string[];
+  keywords?: string[];
+  markdown?: string;
+  /** Carta de presentación (se guarda dentro del mismo JSON del borrador). */
+  coverLetter?: string;
+  coverLetterSource?: "ia" | "plantilla" | "editada";
+  coverLetterUpdatedAt?: string;
 }
 
 export interface VacancyDetailProfile {
@@ -169,7 +195,26 @@ export interface VacancyDetailProfile {
   status: string;
   score: number | null;
   match: VacancyDetail["match"];
-  resume: VacancyDetail["resume"];
+  resume: ResumeDraft | null;
+}
+
+/** Respuesta de GET /profiles/:id (lo que necesita el PDF para el contacto). */
+export interface ProfilePdfInfo {
+  id: string;
+  name: string;
+  headline: string[];
+  email: string | null;
+  phone: string | null;
+  location: string | null;
+  languages: { language: string; level: string }[];
+  links: { type: string; url: string; isPrimary: boolean }[];
+}
+
+export interface CoverLetterResponse {
+  id: string;
+  coverLetter: string;
+  coverLetterSource: "ia" | "plantilla" | "editada";
+  coverLetterUpdatedAt: string;
 }
 
 export interface NotificationRow {
