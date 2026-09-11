@@ -213,10 +213,59 @@ export interface ResumeDraftContent {
   softSkills?: string[];
   keywords?: string[];
   markdown?: string;
+  /**
+   * Modo ATS: una columna, encabezados estándar y contacto limpio. Es un
+   * interruptor porque se pierde fidelidad con el CV original de dos columnas.
+   */
+  atsMode?: boolean;
   /** Carta de presentación (se guarda dentro del mismo JSON del borrador). */
   coverLetter?: string;
   coverLetterSource?: "ia" | "plantilla" | "editada";
   coverLetterUpdatedAt?: string;
+}
+
+export type AtsGrade = "PASS" | "RISK" | "FAIL";
+
+export type AtsKeywordState = "covered" | "partial" | "missing";
+
+export interface AtsKeyword {
+  keyword: string;
+  importance: "high" | "medium";
+  state: AtsKeywordState;
+  matchedTokens: string[];
+  missingTokens: string[];
+}
+
+export interface AtsBreakdown {
+  id: "keywords" | "structure" | "contact" | "format";
+  label: string;
+  score: number;
+  weight: number;
+  detail: string;
+}
+
+/** Resultado del medidor de ATS (lo calcula el API, determinístico). */
+export interface AtsAnalysis {
+  score: number;
+  grade: AtsGrade;
+  atsMode: boolean;
+  language: "es" | "en";
+  breakdown: AtsBreakdown[];
+  missingKeywords: string[];
+  presentKeywords: string[];
+  keywords: AtsKeyword[];
+  warnings: string[];
+  suggestions: string[];
+  expectedHeadings: string[];
+  sectionsFound: string[];
+}
+
+/** Respuesta de POST /resumes/:id/ats/keywords (propuesta sin guardar). */
+export interface AtsKeywordFix {
+  content: ResumeDraftContent;
+  applied: boolean;
+  integrated: string[];
+  note: string;
 }
 
 /** Respuesta de POST /resumes/:id/refine (reorganización con IA). */

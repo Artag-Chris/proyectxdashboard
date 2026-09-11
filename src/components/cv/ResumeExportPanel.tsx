@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { cvApi } from "@/lib/cv-api";
 import { Card } from "@/lib/cv-ui";
 import type {
+  AtsAnalysis,
   ProfilePdfInfo,
   RefineResponse,
   ResumeDraftContent,
@@ -18,7 +19,11 @@ import {
   prettyUrl,
   type ResumePdfProfile,
 } from "@/lib/pdf/types";
+import { AtsPanel } from "./AtsPanel";
 import { PdfPreviewModal, type PreviewTab } from "./PdfPreviewModal";
+
+/** La pestaña ATS es del panel: el pop-out sigue siendo CV/Carta. */
+type PanelTab = PreviewTab | "ats";
 
 // El motor de PDF toca APIs del navegador: nunca debe renderizarse en el server.
 registerFonts();
@@ -72,8 +77,11 @@ export function ResumeExportPanel({
   const [profile, setProfile] = useState<ProfilePdfInfo | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
-  const [tab, setTab] = useState<PreviewTab>("cv");
+  const [tab, setTab] = useState<PanelTab>("cv");
   const [open, setOpen] = useState(false);
+  const [ats, setAts] = useState<AtsAnalysis | null>(null);
+  const [atsLoading, setAtsLoading] = useState(false);
+  const [atsError, setAtsError] = useState("");
 
   // Datos de contacto del perfil (email, teléfono, enlaces, idiomas).
   useEffect(() => {
@@ -125,6 +133,36 @@ export function ResumeExportPanel({
     [profile],
   );
 
+  // Score de ATS del contenido actual (incluye lo sin guardar). Se recalcula con
+  // un retardo para no disparar una llamada por cada tecla; el análisis del API
+  // es determinístico y no usa IA, así que es barato.
+  const contentSignature = JSON.stringify(content);
+  useEffect(() => {
+    let alive = true;
+    const timer = setTimeout(() => {
+      setAtsLoading(true);
+      cvApi
+        .post<AtsAnalysis>(`/resumes/${draftId}/ats`, { content })
+        .then((result) => {
+          if (!alive) return;
+          setAts(result);
+          setAtsError("");
+        })
+        .catch((e) => {
+          if (alive) setAtsError(e instanceof Error ? e.message : String(e));
+        })
+        .finally(() => {
+          if (alive) setAtsLoading(false);
+        });
+    }, 350);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+    // `contentSignature` resume el contenido; `content` cambia de identidad en cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, contentSignature]);
+
   const resumeData = useMemo(
     () => ({
       content,
@@ -150,13 +188,20 @@ export function ResumeExportPanel({
   const dirty = JSON.stringify(content) !== savedJson;
   const canRender = !!profile;
   const hasLetter = !!content.coverLetter?.trim();
+  // La pestaña ATS no aplica al pop-out (que es CV/Carta) ni a la descarga.
+  const previewKind: PreviewTab = tab === "carta" ? "carta" : "cv";
 
   async function save() {
+    await persist(content);
+  }
+
+  /** Guarda un contenido concreto (lo usa el interruptor del Modo ATS). */
+  async function persist(next: ResumeDraftContent) {
     setBusy(true);
     setMsg("");
     try {
-      await cvApi.patch(`/resumes/${draftId}`, { content });
-      setSavedJson(JSON.stringify(content));
+      await cvApi.patch(`/resumes/${draftId}`, { content: next });
+      setSavedJson(JSON.stringify(next));
       setMsg("Guardado.");
       await onChanged();
     } catch (e) {
@@ -260,6 +305,20 @@ export function ResumeExportPanel({
                   sin guardar
                 </span>
               )}
+              {ats && (
+                <span
+                  title="Score de ATS: qué tan bien te lee el robot"
+                  className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${
+                    ats.grade === "PASS"
+                      ? "bg-green-100 text-green-700"
+                      : ats.grade === "RISK"
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  ATS {ats.score}
+                </span>
+              )}
             </h2>
             <p className="mt-0.5 text-xs text-zinc-400">
               {qrUrl
@@ -276,7 +335,7 @@ export function ResumeExportPanel({
               Editar y previsualizar
             </button>
             <button
-              onClick={() => void download(tab)}
+              onClick={() => void download(previewKind)}
               disabled={busy || !canRender}
               className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
             >
@@ -293,7 +352,8 @@ export function ResumeExportPanel({
             [
               ["cv", "Hoja de vida"],
               ["carta", "Carta de presentación"],
-            ] as [PreviewTab, string][]
+              ["ats", "ATS"],
+            ] as [PanelTab, string][]
           ).map(([value, label]) => (
             <button
               key={value}
@@ -306,33 +366,49 @@ export function ResumeExportPanel({
             >
               {label}
               {value === "carta" && hasLetter ? " ✓" : ""}
+              {value === "ats" && ats ? ` · ${ats.score}` : ""}
             </button>
           ))}
         </div>
 
-        <div className="mt-2 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100">
-          {canRender ? (
-            // El visor se omite mientras el modal está abierto: evita dos
-            // instancias del motor de PDF renderizando a la vez.
-            open ? (
-              <div className="flex h-[420px] items-center justify-center text-sm text-zinc-400">
-                Editando en la ventana ampliada…
-              </div>
+        {tab === "ats" ? (
+          <div className="mt-2">
+            <AtsPanel
+              draftId={draftId}
+              content={content}
+              onContent={setContent}
+              onPersist={persist}
+              busy={busy}
+              analysis={ats}
+              loading={atsLoading}
+              error={atsError}
+            />
+          </div>
+        ) : (
+          <div className="mt-2 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100">
+            {canRender ? (
+              // El visor se omite mientras el modal está abierto: evita dos
+              // instancias del motor de PDF renderizando a la vez.
+              open ? (
+                <div className="flex h-[420px] items-center justify-center text-sm text-zinc-400">
+                  Editando en la ventana ampliada…
+                </div>
+              ) : (
+                <PDFViewer width="100%" height={420} showToolbar={false}>
+                  {tab === "cv" ? (
+                    <ResumeDocument data={resumeData} />
+                  ) : (
+                    <CoverLetterDocument data={letterData} />
+                  )}
+                </PDFViewer>
+              )
             ) : (
-              <PDFViewer width="100%" height={420} showToolbar={false}>
-                {tab === "cv" ? (
-                  <ResumeDocument data={resumeData} />
-                ) : (
-                  <CoverLetterDocument data={letterData} />
-                )}
-              </PDFViewer>
-            )
-          ) : (
-            <div className="flex h-[420px] items-center justify-center text-sm text-zinc-400">
-              Preparando vista previa…
-            </div>
-          )}
-        </div>
+              <div className="flex h-[420px] items-center justify-center text-sm text-zinc-400">
+                Preparando vista previa…
+              </div>
+            )}
+          </div>
+        )}
 
         {tab === "carta" && (
           <button
@@ -348,7 +424,7 @@ export function ResumeExportPanel({
       <PdfPreviewModal
         open={open}
         onClose={() => setOpen(false)}
-        tab={tab}
+        tab={previewKind}
         onTab={setTab}
         content={content}
         onChange={setContent}

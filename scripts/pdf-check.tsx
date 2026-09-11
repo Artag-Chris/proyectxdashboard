@@ -159,6 +159,13 @@ async function main() {
     <ResumeDocument data={resumeData} />,
     path.join(outDir, 'cv-sample.pdf'),
   );
+  // El mismo contenido en Modo ATS: una columna, encabezados estándar y
+  // contacto limpio. Sirve para verificar con pdftotext que el orden de lectura
+  // es lineal y que los encabezados son los que busca un ATS.
+  await renderToFile(
+    <ResumeDocument data={{ ...resumeData, content: { ...content, atsMode: true } }} />,
+    path.join(outDir, 'cv-sample-ats.pdf'),
+  );
   await renderToFile(
     <CoverLetterDocument data={letterData} />,
     path.join(outDir, 'cover-letter-sample.pdf'),

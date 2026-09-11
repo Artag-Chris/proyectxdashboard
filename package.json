@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "pdf:check": "node --import ./scripts/pdf-loader.mjs --import tsx scripts/pdf-check.tsx"
+    "pdf:check": "node --import ./scripts/pdf-loader.mjs --import tsx scripts/pdf-check.tsx",
+    "ats:verify": "node scripts/ats-verify.mjs"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",

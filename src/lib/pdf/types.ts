@@ -13,6 +13,12 @@ export interface ResumePdfContent {
   education?: { institution?: string; degree?: string; period?: string }[];
   softSkills?: string[];
   keywords?: string[];
+  /**
+   * Modo ATS: una sola columna, encabezados estándar y contacto limpio. Lo que
+   * gana en parseabilidad lo pierde en fidelidad con el CV original de dos
+   * columnas, por eso es un interruptor y no el comportamiento por defecto.
+   */
+  atsMode?: boolean;
 }
 
 export interface ContactLink {
@@ -93,6 +99,25 @@ export function portfolioUrl(profile: ResumePdfProfile): string | null {
   const links = profile.links ?? [];
   const byType = (t: string) => links.find((l) => (l.type ?? '').toLowerCase() === t)?.url;
   return byType('website') ?? byType('portfolio') ?? byType('github') ?? null;
+}
+
+/**
+ * El texto que un ATS usa para buscar palabras clave: el cuerpo de la HV, sin
+ * el contacto. Refleja el mismo criterio que el medidor del API, para que el
+ * usuario pueda ver POR QUÉ su score es el que es.
+ */
+export function resumeToAtsText(content: ResumePdfContent): string {
+  const parts: string[] = [content.headline ?? '', content.summary ?? ''];
+  parts.push(...(content.skills ?? []));
+  for (const exp of content.experience ?? []) {
+    parts.push(exp.role ?? '', exp.company ?? '', ...(exp.bullets ?? []));
+  }
+  for (const project of content.projects ?? []) {
+    parts.push(project.name ?? '', ...(project.highlights ?? []));
+  }
+  for (const edu of content.education ?? []) parts.push(edu.degree ?? '', edu.institution ?? '');
+  parts.push(...(content.softSkills ?? []));
+  return parts.filter(Boolean).join('\n');
 }
 
 /** Parte la carta en párrafos, descartando líneas vacías. */
