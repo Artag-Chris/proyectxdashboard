@@ -125,9 +125,14 @@ export function PdfPreviewModal({
             <button
               onClick={() => void onDownload(tab)}
               disabled={busy}
+              title={
+                content.atsMode
+                  ? "Descarga la HV en Modo ATS: una columna y encabezados estándar"
+                  : "Descarga la HV en la plantilla de dos columnas"
+              }
               className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
             >
-              Descargar PDF
+              {content.atsMode ? "Descargar PDF (ATS)" : "Descargar PDF"}
             </button>
             <button
               onClick={onClose}

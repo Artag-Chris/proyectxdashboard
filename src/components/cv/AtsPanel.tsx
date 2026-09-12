@@ -18,6 +18,11 @@ interface Props {
   analysis: AtsAnalysis | null;
   loading: boolean;
   error: string;
+  /** Hay cambios locales sin guardar (los acomodos de la IA no se guardan solos). */
+  dirty: boolean;
+  onSave: () => void | Promise<void>;
+  /** Descarga la HV actual; con el Modo ATS encendido sale la de una columna. */
+  onDownload: () => void | Promise<void>;
 }
 
 const GRADE_STYLE: Record<AtsAnalysis["grade"], { label: string; box: string; text: string }> = {
@@ -46,6 +51,9 @@ export function AtsPanel({
   analysis,
   loading,
   error,
+  dirty,
+  onSave,
+  onDownload,
 }: Props) {
   const [fixMsg, setFixMsg] = useState("");
   const [fixing, setFixing] = useState(false);
@@ -114,6 +122,44 @@ export function AtsPanel({
           </span>
         </span>
       </label>
+
+      {/* Con el modo encendido, el PDF que se descarga es el de una columna. */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => void onDownload()}
+          disabled={busy || !atsMode}
+          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+        >
+          Descargar en Modo ATS
+        </button>
+        <span className="text-xs text-zinc-400">
+          {atsMode
+            ? "Una columna y encabezados estándar: es la versión que lee el robot."
+            : "Activá el Modo ATS para bajar la versión de una columna."}
+        </span>
+      </div>
+
+      {/*
+        «Acomodarlas con IA» cambia el borrador en pantalla pero NO lo guarda: sin
+        este aviso, el trabajo de la IA se perdía al salir de la ficha.
+      */}
+      {dirty && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <span className="text-xs text-amber-800">
+            Hay cambios sin guardar. Los acomodos de la IA viven solo en esta pantalla hasta que los
+            guardes.
+          </span>
+          <button
+            type="button"
+            onClick={() => void onSave()}
+            disabled={busy}
+            className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
+          >
+            Guardar cambios
+          </button>
+        </div>
+      )}
 
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 

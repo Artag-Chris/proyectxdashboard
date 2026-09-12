@@ -368,6 +368,16 @@ export function ResumeExportPanel({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {dirty && (
+              <button
+                onClick={() => void save()}
+                disabled={busy}
+                title="Los cambios (tuyos o de la IA) no están guardados"
+                className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
+              >
+                Guardar cambios
+              </button>
+            )}
             <button
               onClick={() => setOpen(true)}
               disabled={!canRender}
@@ -378,9 +388,14 @@ export function ResumeExportPanel({
             <button
               onClick={() => void download(previewKind)}
               disabled={busy || !canRender}
+              title={
+                content.atsMode
+                  ? "Descarga la HV en Modo ATS: una columna y encabezados estándar"
+                  : "Descarga la HV en la plantilla de dos columnas"
+              }
               className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
             >
-              Descargar PDF
+              {content.atsMode ? "Descargar PDF (ATS)" : "Descargar PDF"}
             </button>
           </div>
         </div>
@@ -453,6 +468,9 @@ export function ResumeExportPanel({
               analysis={ats}
               loading={atsLoading}
               error={atsError}
+              dirty={dirty}
+              onSave={save}
+              onDownload={() => download("cv")}
             />
           </div>
         ) : (
