@@ -33,6 +33,7 @@ export default function CvVacanteDetalle() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [forceMsg, setForceMsg] = useState("");
+  const [copied, setCopied] = useState(false);
 
   async function load() {
     try {
@@ -53,6 +54,22 @@ export default function CvVacanteDetalle() {
   if (!vac) return <p className="text-zinc-400">Cargando vacante…</p>;
 
   const applyUrl = (vac.raw.applyUrl as string | undefined) ?? vac.url;
+  // Portal donde vive el aviso original (en agregadores como Jooble, la vacante
+  // está publicada en OTRO sitio: "fitly.work").
+  const originSource = (vac.raw.originSource as string | undefined) ?? null;
+  const aggregator = applyUrl ? aggregatorHost(applyUrl) : null;
+
+  async function copyApplyUrl() {
+    if (!applyUrl) return;
+    try {
+      await navigator.clipboard.writeText(applyUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Sin permiso de portapapeles (http): queda el texto seleccionable.
+      setCopied(false);
+    }
+  }
   // Con un perfil elegido, el estado mostrado es el SUYO (aplicada/ignorada es
   // por perfil, no global).
   const scopedProfile = profileId
@@ -188,6 +205,60 @@ export default function CvVacanteDetalle() {
         )}
       </div>
 
+      {/*
+        El enlace es la diferencia entre poder aplicar y no encontrar la vacante:
+        se muestra el texto completo para poder copiarlo, no solo el botón.
+      */}
+      <div className="mt-4">
+        <Card>
+          <h2 className="text-sm font-semibold text-emerald-700">Dónde está publicada</h2>
+          <p className="mt-1 text-sm text-zinc-600">
+            {[vac.company, vac.location, vac.salary].filter(Boolean).join(" · ") || "Sin datos"}
+            {originSource && (
+              <>
+                {" · aviso original en "}
+                <b>{originSource}</b>
+                <span className="ml-1 text-xs text-zinc-400">
+                  (agregado por {vac.source.name})
+                </span>
+              </>
+            )}
+          </p>
+          {applyUrl ? (
+            <>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <a
+                  href={applyUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-lg border border-emerald-300 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+                >
+                  Abrir el aviso ↗
+                </a>
+                <button
+                  onClick={() => void copyApplyUrl()}
+                  className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50"
+                >
+                  {copied ? "¡Copiada!" : "Copiar URL"}
+                </button>
+              </div>
+              <p className="mt-2 select-all break-all rounded-lg bg-zinc-50 px-2 py-1.5 text-xs text-zinc-500">
+                {applyUrl}
+              </p>
+              {aggregator && (
+                <p className="mt-1 text-xs text-amber-700">
+                  Enlace del agregador {aggregator}: abrilo en el navegador y te redirige al aviso
+                  original (nuestro servidor recibe un 403 de Cloudflare, así que no lo puede
+                  resolver solo).
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="mt-2 text-xs text-zinc-400">Sin URL de aplicación.</p>
+          )}
+        </Card>
+      </div>
+
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="space-y-4">
           <Card>
@@ -283,4 +354,18 @@ export default function CvVacanteDetalle() {
       </div>
     </div>
   );
+}
+
+/**
+ * Los agregadores (Jooble) publican enlaces suyos que solo se resuelven desde un
+ * navegador de verdad: desde un servidor, Cloudflare responde 403. Medido: los
+ * links vienen de dos formas (`/away/…` y `/desc/…`), así que se detecta por host.
+ */
+function aggregatorHost(url: string): string | null {
+  try {
+    const { hostname } = new URL(url);
+    return hostname === "jooble.org" || hostname.endsWith(".jooble.org") ? hostname : null;
+  } catch {
+    return null;
+  }
 }

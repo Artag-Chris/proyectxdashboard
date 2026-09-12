@@ -166,51 +166,71 @@ export default function CvVacantes() {
 
       <div className="flex flex-col gap-2">
         {(data?.rows ?? []).map((v) => (
-          <Link
+          <div
             key={v.id}
-            href={`/cv/vacantes/${v.id}${profileId ? `?profileId=${profileId}` : ""}`}
-            className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm hover:border-emerald-400"
+            className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm hover:border-emerald-400"
           >
-            <div className="min-w-0 flex-1">
-              <div className="truncate font-medium">{v.title}</div>
-              <div className="truncate text-sm text-zinc-500">
-                {[v.company, v.location, v.salary].filter(Boolean).join(" · ") || "—"}
-                <span className="ml-2 text-xs text-zinc-400">{v.source.name}</span>
-                {v.isManual && (
-                  <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
-                    Manual
-                  </span>
-                )}
-              </div>
-              {(v.modalityTypes.length > 0 || seniorityLabel(v.seniorityLevel)) && (
-                <div className="mt-1 flex flex-wrap items-center gap-1">
-                  <ModalityChips types={v.modalityTypes} />
-                  {seniorityLabel(v.seniorityLevel) && (
-                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
-                      {seniorityLabel(v.seniorityLevel)}
+            <Link
+              href={`/cv/vacantes/${v.id}${profileId ? `?profileId=${profileId}` : ""}`}
+              className="flex min-w-0 flex-1 items-center gap-3"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium">{v.title}</div>
+                <div className="truncate text-sm text-zinc-500">
+                  {[v.company, v.location, v.salary].filter(Boolean).join(" · ") || "—"}
+                  <span className="ml-2 text-xs text-zinc-400">{v.source.name}</span>
+                  {v.isManual && (
+                    <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
+                      Manual
                     </span>
                   )}
                 </div>
-              )}
-              {!selectedProfile && v.profiles.length > 0 && (
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {v.profiles.map((p) => (
-                    <span
-                      key={p.profileId}
-                      className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600"
-                    >
-                      {p.profileName}
-                      {p.score !== null ? ` ${p.score}%` : ""}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-            <StatusBadge status={v.status} />
-            <div className="w-10 text-right">
-              <Score score={v.matchScore} />
-            </div>
-          </Link>
+                {(v.modalityTypes.length > 0 || seniorityLabel(v.seniorityLevel)) && (
+                  <div className="mt-1 flex flex-wrap items-center gap-1">
+                    <ModalityChips types={v.modalityTypes} />
+                    {seniorityLabel(v.seniorityLevel) && (
+                      <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
+                        {seniorityLabel(v.seniorityLevel)}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {!selectedProfile && v.profiles.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {v.profiles.map((p) => (
+                      <span
+                        key={p.profileId}
+                        className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600"
+                      >
+                        {p.profileName}
+                        {p.score !== null ? ` ${p.score}%` : ""}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <StatusBadge status={v.status} />
+              <div className="w-10 text-right">
+                <Score score={v.matchScore} />
+              </div>
+            </Link>
+            {/*
+              Aplicar sin entrar a la ficha. La URL la trae la fuente: en los
+              portales es el aviso real y en los agregadores su enlace de
+              redirección (se resuelve en el navegador, no en el servidor).
+            */}
+            {v.url && (
+              <a
+                href={v.url}
+                target="_blank"
+                rel="noreferrer"
+                title={v.url}
+                className="shrink-0 rounded-lg border border-emerald-300 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+              >
+                Aplicar ↗
+              </a>
+            )}
+          </div>
         ))}
         {data && data.rows.length === 0 && (
           <p className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-400">

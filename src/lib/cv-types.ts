@@ -117,6 +117,8 @@ export interface VacancyProfileInfo {
 export interface VacancyRow {
   id: string;
   title: string;
+  /** URL del aviso en el portal (en agregadores, su enlace de redirección). */
+  url: string;
   company: string | null;
   location: string | null;
   salary: string | null;
