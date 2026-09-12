@@ -181,6 +181,8 @@ export default function CvPegarOferta() {
       <p className="mt-1 text-sm text-zinc-500">
         Para ofertas que no se pueden scrapear (LinkedIn, portales con login…). Pegá el texto y se
         genera la hoja de vida personalizada y su carta, con el mismo motor de la pestaña Vacantes.
+        Si el texto trae el link del aviso (correos de alerta), se toma solo: no hace falta
+        cargarlo a mano.
       </p>
 
       <Card className="mt-3">
