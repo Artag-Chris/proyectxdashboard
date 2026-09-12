@@ -316,6 +316,7 @@ export default function CvPegarOferta() {
               draftId={vac.resume.id}
               profileId={vac.resume.profileId}
               content={vac.resume.content}
+              version={vac.resume.version}
               vacancyTitle={vac.title}
               company={vac.company}
               onChanged={reload}

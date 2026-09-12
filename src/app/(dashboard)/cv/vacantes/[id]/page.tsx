@@ -93,18 +93,35 @@ export default function CvVacanteDetalle() {
     await load();
   }
 
-  /** Genera la HV aunque el match no llegue al umbral (acción explícita). */
-  async function forceResume() {
+  /**
+   * Genera —o REGENERA— la HV con el perfil actual. Regenerar pisa el texto del
+   * CV (la carta se conserva), así que es una acción explícita y confirmada.
+   */
+  async function generateResume(opts: { regenerate?: boolean } = {}) {
     if (!vac) return;
+    if (
+      opts.regenerate &&
+      !window.confirm(
+        "Se vuelve a redactar la HV con el perfil actual: se pierden las ediciones del texto del CV (la carta de presentación se conserva). ¿Seguir?",
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     setForceMsg("");
     setError("");
     try {
       const query = profileId ? `?profileId=${profileId}` : "";
       await cvApi.post(`/vacancies/${vac.id}/generate-resume${query}`);
-      setForceMsg("Generando la hoja de vida… actualizá en unos segundos.");
-      // El pipeline corre en segundo plano: se refresca para ver el avance.
-      setTimeout(() => void load(), 5000);
+      setForceMsg(
+        opts.regenerate
+          ? "Regenerando la HV con el perfil actual… el texto se actualiza en unos segundos."
+          : "Generando la hoja de vida… actualizá en unos segundos.",
+      );
+      // El pipeline corre en segundo plano: se refresca para ver el avance
+      // (dos veces, porque la llamada a la IA puede tardar).
+      setTimeout(() => void load(), 6000);
+      setTimeout(() => void load(), 18000);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -184,6 +201,16 @@ export default function CvVacanteDetalle() {
           <span className="rounded-lg border border-dashed border-zinc-300 px-3 py-1.5 text-sm text-zinc-400">
             Sin URL de aplicación (oferta pegada a mano)
           </span>
+        )}
+        {vac.resume && (
+          <button
+            onClick={() => void generateResume({ regenerate: true })}
+            disabled={busy}
+            title="Vuelve a redactar la HV con el perfil actual (pisa el texto del CV; la carta se conserva)"
+            className="rounded-lg border border-emerald-300 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+          >
+            Regenerar HV
+          </button>
         )}
         {shownStatus !== "APPLIED" && (
           <button
@@ -327,7 +354,7 @@ export default function CvVacanteDetalle() {
                 igual, generala a pedido.
               </p>
               <button
-                onClick={() => void forceResume()}
+                onClick={() => void generateResume()}
                 disabled={busy}
                 className="mt-3 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
               >
@@ -345,6 +372,7 @@ export default function CvVacanteDetalle() {
               draftId={vac.resume.id}
               profileId={vac.resume.profileId}
               content={vac.resume.content}
+              version={vac.resume.version}
               vacancyTitle={vac.title}
               company={vac.company}
               onChanged={load}

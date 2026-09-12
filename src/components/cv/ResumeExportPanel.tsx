@@ -46,6 +46,8 @@ interface Props {
   /** Perfil dueño del borrador: de ahí salen contacto, idiomas y QR. */
   profileId: string;
   content: ResumeDraftContent;
+  /** Versión del borrador en el servidor: si sube, se resincroniza el texto. */
+  version?: number;
   vacancyTitle: string;
   company: string | null;
   /** Avisa al padre para que refresque (el contenido ya se guardó). */
@@ -67,6 +69,7 @@ export function ResumeExportPanel({
   draftId,
   profileId,
   content: initialContent,
+  version,
   vacancyTitle,
   company,
   onChanged,
@@ -193,6 +196,21 @@ export function ResumeExportPanel({
 
   const dirty = JSON.stringify(content) !== savedJson;
   const canRender = !!profile;
+
+  /**
+   * El servidor puede publicar una versión nueva sin que el usuario toque nada
+   * (la HV se regeneró desde el perfil). Se adopta ese texto —salvo que haya
+   * ediciones locales sin guardar, que ganan— sin remontar el panel (remontarlo
+   * cerraría el pop-out de edición). Es ajuste durante el render, no un efecto.
+   */
+  const [syncedVersion, setSyncedVersion] = useState(version);
+  if (version !== undefined && version !== syncedVersion) {
+    setSyncedVersion(version);
+    if (!dirty) {
+      setContent(initialContent);
+      setSavedJson(JSON.stringify(initialContent));
+    }
+  }
   const hasLetter = !!content.coverLetter?.trim();
   // La pestaña ATS no aplica al pop-out (que es CV/Carta) ni a la descarga.
   const previewKind: PreviewTab = tab === "carta" ? "carta" : "cv";
