@@ -119,6 +119,11 @@ export interface VacancyRow {
   title: string;
   /** URL del aviso en el portal (en agregadores, su enlace de redirección). */
   url: string;
+  /**
+   * Link para aplicar ya resuelto: los portales HTML entregan el href relativo
+   * (ej. `/ofertas-de-trabajo/…`) y el API lo absolutiza contra el portal.
+   */
+  applyUrl: string | null;
   company: string | null;
   location: string | null;
   salary: string | null;
@@ -145,6 +150,8 @@ export interface VacancyDetail {
   salary: string | null;
   modality: string | null;
   url: string;
+  /** Link para aplicar ya resuelto (href relativo absolutizado contra el portal). */
+  applyUrl: string | null;
   status: VacancyStatus;
   matchScore: number | null;
   enrichment: {

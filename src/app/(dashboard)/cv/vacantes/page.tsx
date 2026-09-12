@@ -216,15 +216,16 @@ export default function CvVacantes() {
             </Link>
             {/*
               Aplicar sin entrar a la ficha. La URL la trae la fuente: en los
-              portales es el aviso real y en los agregadores su enlace de
-              redirección (se resuelve en el navegador, no en el servidor).
+              portales es el aviso real (el API lo absolutiza: los listados dan
+              el href relativo) y en los agregadores su enlace de redirección
+              (se resuelve en el navegador, no en el servidor).
             */}
-            {v.url && (
+            {(v.applyUrl ?? v.url) && (
               <a
-                href={v.url}
+                href={v.applyUrl ?? v.url}
                 target="_blank"
                 rel="noreferrer"
-                title={v.url}
+                title={v.applyUrl ?? v.url}
                 className="shrink-0 rounded-lg border border-emerald-300 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
               >
                 Aplicar ↗

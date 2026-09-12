@@ -53,7 +53,10 @@ export default function CvVacanteDetalle() {
   if (error) return <p className="text-red-600">{error}</p>;
   if (!vac) return <p className="text-zinc-400">Cargando vacante…</p>;
 
-  const applyUrl = (vac.raw.applyUrl as string | undefined) ?? vac.url;
+  // El API ya resuelve el href relativo contra el portal (`applyUrl`); el fallback
+  // cubre respuestas viejas en caché del navegador.
+  const applyUrl =
+    vac.applyUrl ?? (vac.raw.applyUrl as string | undefined) ?? vac.url;
   // Portal donde vive el aviso original (en agregadores como Jooble, la vacante
   // está publicada en OTRO sitio: "fitly.work").
   const originSource = (vac.raw.originSource as string | undefined) ?? null;
