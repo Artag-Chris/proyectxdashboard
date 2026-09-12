@@ -110,6 +110,11 @@ export interface VacancyRow {
   company: string | null;
   location: string | null;
   salary: string | null;
+  /** Texto original del portal (ej. "Híbrido / Remoto"). */
+  modality: string | null;
+  /** Facets canónicos para filtrar: REMOTE | HYBRID | ONSITE (puede haber varios). */
+  modalityTypes: string[];
+  seniorityLevel: string | null;
   status: VacancyStatus;
   /** Con perfil elegido es SU score; sin perfil, el mejor de cualquier perfil. */
   matchScore: number | null;

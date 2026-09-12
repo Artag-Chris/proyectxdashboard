@@ -43,6 +43,47 @@ export function Score({ score }: { score: number | null }) {
   return <span className={`text-sm font-bold ${color}`}>{score}</span>;
 }
 
+/** Facets canónicos de la vacante (los calcula el API; acá solo se muestran/filtran). */
+export const MODALITY_OPTIONS = [
+  { value: "REMOTE", label: "Remota" },
+  { value: "HYBRID", label: "Híbrida" },
+  { value: "ONSITE", label: "Presencial" },
+] as const;
+
+export const SENIORITY_OPTIONS = [
+  { value: "TRAINEE", label: "Trainee" },
+  { value: "JUNIOR", label: "Junior" },
+  { value: "SEMI_SENIOR", label: "Semi Senior" },
+  { value: "SENIOR", label: "Senior" },
+  { value: "LEAD", label: "Lead" },
+] as const;
+
+export function modalityLabel(value: string): string {
+  return MODALITY_OPTIONS.find((o) => o.value === value)?.label ?? value;
+}
+
+export function seniorityLabel(value?: string | null): string | null {
+  if (!value) return null;
+  return SENIORITY_OPTIONS.find((o) => o.value === value)?.label ?? value;
+}
+
+/** Chips de modalidad: una vacante puede ofrecer varias ("Remota" + "Híbrida"). */
+export function ModalityChips({ types }: { types?: string[] }) {
+  if (!types || types.length === 0) return null;
+  return (
+    <>
+      {types.map((type) => (
+        <span
+          key={type}
+          className="rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700"
+        >
+          {modalityLabel(type)}
+        </span>
+      ))}
+    </>
+  );
+}
+
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`rounded-xl border border-zinc-200 bg-white p-4 shadow-sm ${className}`}>

@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { cvApi } from "@/lib/cv-api";
-import { Score, StatusBadge } from "@/lib/cv-ui";
+import {
+  ModalityChips,
+  MODALITY_OPTIONS,
+  Score,
+  SENIORITY_OPTIONS,
+  seniorityLabel,
+  StatusBadge,
+} from "@/lib/cv-ui";
 import { usePoll } from "@/lib/usePoll";
 import type { ProfileRow, VacancyRow } from "@/lib/cv-types";
 
@@ -21,6 +28,9 @@ export default function CvVacantes() {
   const [status, setStatus] = useState("ALL");
   const [q, setQ] = useState("");
   const [profileId, setProfileId] = useState("");
+  const [modality, setModality] = useState("");
+  const [seniority, setSeniority] = useState("");
+  const [location, setLocation] = useState("");
   const [onlyGoodMatch, setOnlyGoodMatch] = useState(true);
   const [minScore, setMinScore] = useState(String(DEFAULT_MIN_SCORE));
 
@@ -30,12 +40,15 @@ export default function CvVacantes() {
   const params = new URLSearchParams({ status, limit: "100" });
   if (q) params.set("q", q);
   if (profileId) params.set("profileId", profileId);
+  if (modality) params.set("modality", modality);
+  if (seniority) params.set("seniority", seniority);
+  if (location.trim()) params.set("location", location.trim());
   if (effectiveMin !== null) params.set("minScore", String(effectiveMin));
 
   const { data, error, reload } = usePoll<ListResponse>(
     () => cvApi.get(`/vacancies?${params.toString()}`),
     15000,
-    [status, q, profileId, onlyGoodMatch, minScore],
+    [status, q, profileId, modality, seniority, location, onlyGoodMatch, minScore],
   );
 
   const selectedProfile = (profiles ?? []).find((p) => p.id === profileId) ?? null;
@@ -69,6 +82,39 @@ export default function CvVacantes() {
             </option>
           ))}
         </select>
+        <select
+          value={modality}
+          onChange={(e) => setModality(e.target.value)}
+          className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          title="Modalidad de la vacante: remota, híbrida o presencial"
+        >
+          <option value="">Toda modalidad</option>
+          {MODALITY_OPTIONS.map((m) => (
+            <option key={m.value} value={m.value}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={seniority}
+          onChange={(e) => setSeniority(e.target.value)}
+          className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          title="Seniority pedido por la vacante"
+        >
+          <option value="">Todo seniority</option>
+          {SENIORITY_OPTIONS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <input
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && reload()}
+          placeholder="Ubicación…"
+          className="w-36 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -136,6 +182,16 @@ export default function CvVacantes() {
                   </span>
                 )}
               </div>
+              {(v.modalityTypes.length > 0 || seniorityLabel(v.seniorityLevel)) && (
+                <div className="mt-1 flex flex-wrap items-center gap-1">
+                  <ModalityChips types={v.modalityTypes} />
+                  {seniorityLabel(v.seniorityLevel) && (
+                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
+                      {seniorityLabel(v.seniorityLevel)}
+                    </span>
+                  )}
+                </div>
+              )}
               {!selectedProfile && v.profiles.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   {v.profiles.map((p) => (
