@@ -184,6 +184,38 @@ export default function CvPerfiles() {
     }
   }
 
+  /**
+   * Importa el markdown al perfil ESTRUCTURADO con IA. Es lo que hace que la
+   * HV generada salga llena: indexar el texto solo alimenta el match semántico.
+   */
+  async function importResume() {
+    if (!profile || !txt.trim()) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      const res = await cvApi.post<{
+        applied: boolean;
+        note: string;
+        counts?: Record<string, number>;
+      }>(`/profiles/${profile.id}/import-resume`, { content: txt });
+      if (!res.applied) {
+        setMsg(res.note);
+      } else {
+        const c = res.counts ?? {};
+        setMsg(
+          `Perfil actualizado con IA: ${c.experiences ?? 0} experiencia(s), ` +
+            `${c.projects ?? 0} proyecto(s), ${c.skills ?? 0} skill(s), ` +
+            `${c.education ?? 0} formación, ${c.links ?? 0} enlace(s). ${res.note}`,
+        );
+      }
+      reloadDetail();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   /** Re-evalúa las vacantes ya guardadas contra este perfil (backfill). */
   async function runBackfill() {
     if (!profile) return;
@@ -659,12 +691,27 @@ export default function CvPerfiles() {
                   rows={6}
                   className="w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-                <button
-                  disabled={!txt.trim() || busy}
-                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-                >
-                  Indexar texto
-                </button>
+                <p className="text-xs text-zinc-400">
+                  <b>Indexar texto</b> alimenta el match semántico. <b>Importar al perfil</b> usa la
+                  IA para cargar experiencias, proyectos y skills del markdown en el perfil (lo que
+                  llena la HV generada).
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    disabled={!txt.trim() || busy}
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                  >
+                    Indexar texto (match)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void importResume()}
+                    disabled={!txt.trim() || busy}
+                    className="rounded-lg border border-emerald-500 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                  >
+                    Importar al perfil (IA)
+                  </button>
+                </div>
               </form>
               {msg && <p className="mt-2 text-sm text-emerald-600">{msg}</p>}
             </Card>
