@@ -77,6 +77,25 @@ function SectionTitle({ children }: { children: string }) {
   );
 }
 
+/**
+ * Titular del header. Se ocupa de que un titular largo NUNCA se monte sobre el
+ * bloque de contacto:
+ *  1. lo parte en los separadores naturales (`|`, `·`, `•`) para que use varias
+ *     líneas parejas en vez de una sola que se desborda, y
+ *  2. lo pasa a MAYÚSCULAS aquí —no con `textTransform`— y sin `letterSpacing`,
+ *     porque react-pdf mide el ancho del texto SIN transformar y sin tracking:
+ *     "cabía" en su cálculo pero se dibujaba más ancho y pisaba la columna
+ *     derecha. Midir == dibujar es lo que hace que el wrap sea correcto.
+ */
+function buildHeadline(raw: string): string {
+  return raw
+    .split(/[|•·]/)
+    .map((part) => sanitizeForPdf(part).trim())
+    .filter(Boolean)
+    .join('\n')
+    .toUpperCase();
+}
+
 /** Viñeta dibujada como círculo: la fuente latin no trae glifos de viñeta. */
 function Bullet({ children }: { children: string }) {
   return (
@@ -257,6 +276,8 @@ export function ResumeDocument({ data }: { data: ResumePdfData }) {
   const atsMode = content.atsMode === true;
   const name = sanitizeForPdf(profile.name || 'Hoja de vida');
   const headline = sanitizeForPdf(content.headline ?? '');
+  // Titular visible: mayúsculas + partido por separadores (ver buildHeadline).
+  const headlineDisplay = buildHeadline(content.headline ?? '');
   const summary = sanitizeForPdf(content.summary ?? '');
   const experience = content.experience ?? [];
   const education = content.education ?? [];
@@ -290,7 +311,9 @@ export function ResumeDocument({ data }: { data: ResumePdfData }) {
             <View style={styles.headerLeft}>
               <Text style={styles.name}>{name}</Text>
               <View style={styles.nameRule} />
-              {headline ? <Text style={styles.headline}>{headline}</Text> : null}
+              {headlineDisplay ? (
+                <PdfText text={headlineDisplay} style={styles.headline} />
+              ) : null}
             </View>
             <View style={styles.headerRight}>
               {contacts.map((row, i) => (
@@ -412,8 +435,9 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bodyBold,
     fontSize: 9.4,
     color: COLORS.white,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
+    // SIN letterSpacing ni textTransform: react-pdf no los descuenta al medir el
+    // ancho y un titular largo se montaba sobre el bloque de contacto. Las
+    // mayúsculas se aplican al propio texto en `buildHeadline`.
     lineHeight: 1.3,
   },
   contactRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },

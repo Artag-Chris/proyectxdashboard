@@ -40,7 +40,10 @@ const profile = {
 };
 
 const content = {
-  headline: 'AI Engineer — Backend & Sistemas Distribuidos',
+  // Titular LARGO a propósito (regresión): sin el fix se montaba sobre el
+  // bloque de contacto porque react-pdf no descuenta el `letterSpacing` al medir.
+  headline:
+    'Desarrollador Fullstack IA Junior | Agentes LLM, Function Calling y RAG con Node.js, TypeScript y Next.js',
   // A propósito con caracteres "tipográficos" y un salto de línea interno: son
   // los que rompían el PDF (fuente Helvetica no embebida) o salían sin glifo.
   summary:
