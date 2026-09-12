@@ -42,6 +42,10 @@ export interface SourceTemplate {
   id: string;
   label: string;
   hint: string;
+  /** `HTML_RECIPE` (por defecto) o `API_JSON` (API oficial del portal). */
+  kind?: string;
+  /** Receta o spec de API que trae la plantilla (se prellena al elegirla). */
+  selectors?: Record<string, unknown>;
 }
 
 /** Resultado de analizar una URL (POST /sources/probe). */

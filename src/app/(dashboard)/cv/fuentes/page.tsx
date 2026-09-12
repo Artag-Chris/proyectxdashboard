@@ -181,6 +181,9 @@ export default function CvFuentes() {
 
   const [sel, setSel] = useState<SelectorForm>(EMPTY_SELECTORS);
   const [lim, setLim] = useState<LimitsForm>(DEFAULT_LIMITS);
+  /** Fuente por API oficial: se edita la spec JSON, no selectores CSS. */
+  const [apiMode, setApiMode] = useState(false);
+  const [apiSpec, setApiSpec] = useState("");
   const [probe, setProbe] = useState<ProbeResult | null>(null);
   const [probing, setProbing] = useState(false);
 
@@ -192,6 +195,8 @@ export default function CvFuentes() {
   function resetForm() {
     setEditingId(null);
     setAdvanced(false);
+    setApiMode(false);
+    setApiSpec("");
     setName("");
     setTemplateId("");
     setListUrl("");
@@ -199,6 +204,20 @@ export default function CvFuentes() {
     setSel(EMPTY_SELECTORS);
     setLim(DEFAULT_LIMITS);
     setProbe(null);
+  }
+
+  /** Si la plantilla es de API oficial, se edita la spec en vez de selectores CSS. */
+  function onTemplateChange(id: string) {
+    setTemplateId(id);
+    const tpl = (templates ?? []).find((t) => t.id === id);
+    if (tpl?.kind === "API_JSON") {
+      setApiMode(true);
+      setAdvanced(false);
+      setApiSpec(JSON.stringify((tpl.selectors?.api as unknown) ?? {}, null, 2));
+    } else {
+      setApiMode(false);
+      setApiSpec("");
+    }
   }
 
   /**
@@ -285,10 +304,21 @@ export default function CvFuentes() {
     setListUrl(s.listUrl);
     setHours(String(Math.max(1, Math.round(s.intervalMinutes / 60))));
     setTemplateId("");
-    // Una fuente existente se edita con su receta tal cual está guardada.
-    setAdvanced(true);
-    setSel(selectorsFrom(s));
-    setLim(limitsFrom(s));
+    if (s.kind === "API_JSON") {
+      // Una fuente de API se edita como spec JSON: mandarle selectores CSS la rompería.
+      setApiMode(true);
+      setAdvanced(false);
+      setApiSpec(
+        JSON.stringify((s.selectors as Record<string, unknown> | undefined)?.api ?? {}, null, 2),
+      );
+    } else {
+      setApiMode(false);
+      setApiSpec("");
+      // Una fuente existente se edita con su receta tal cual está guardada.
+      setAdvanced(true);
+      setSel(selectorsFrom(s));
+      setLim(limitsFrom(s));
+    }
     setMsg("");
     setShowForm(true);
   }
@@ -339,7 +369,7 @@ export default function CvFuentes() {
       setMsg("Receta: los selectores «vacante» y «título» son obligatorios.");
       return;
     }
-    if (!advanced && !templateId) {
+    if (!advanced && !apiMode && !templateId) {
       setMsg("Elegí una plantilla, o pasá al editor avanzado.");
       return;
     }
@@ -349,7 +379,21 @@ export default function CvFuentes() {
       listUrl: trimmedUrl,
       intervalMinutes: Math.max(5, Math.round((Number(hours) || 24) * 60)),
     };
-    if (advanced) {
+    if (apiMode) {
+      // La spec se manda explícita (prellenada desde la plantilla) para que el
+      // usuario pueda ajustar keywords/mapeo sin depender del backend.
+      let spec: unknown;
+      try {
+        spec = JSON.parse(apiSpec);
+      } catch {
+        setMsg("La spec de la API no es JSON válido.");
+        return;
+      }
+      payload.kind = "API_JSON";
+      payload.selectors = { api: spec };
+      // Con plantilla se heredan sus límites (páginas, delay, UA).
+      if (templateId) payload.templateId = templateId;
+    } else if (advanced) {
       payload.selectors = recipePayload();
       payload.limits = {
         maxPages: Math.max(1, Number(lim.maxPages) || 1),
@@ -385,7 +429,7 @@ export default function CvFuentes() {
         <div>
           <h1 className="text-lg font-bold">Fuentes de vacantes</h1>
           <span className="text-xs text-zinc-500">
-            Plantilla del portal o receta CSS propia (editor avanzado)
+            Plantilla del portal, receta CSS propia o API oficial (editor avanzado)
           </span>
         </div>
         <button
@@ -440,23 +484,30 @@ export default function CvFuentes() {
             <input
               value={listUrl}
               onChange={(e) => setListUrl(e.target.value)}
-              placeholder="URL del listado que scrapea el cron"
+              placeholder={
+                apiMode ? "URL de búsqueda del portal (referencia)" : "URL del listado que scrapea el cron"
+              }
               required
               className="min-w-[16rem] flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
-            <button
-              type="button"
-              onClick={() => void analyze()}
-              disabled={probing || !listUrl.trim()}
-              className="rounded-lg border border-emerald-600 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
-            >
-              {probing ? "Analizando…" : "Analizar URL"}
-            </button>
+            {/* El probe analiza HTML: no aplica a una fuente por API. */}
+            {!apiMode && (
+              <button
+                type="button"
+                onClick={() => void analyze()}
+                disabled={probing || !listUrl.trim()}
+                className="rounded-lg border border-emerald-600 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+              >
+                {probing ? "Analizando…" : "Analizar URL"}
+              </button>
+            )}
           </div>
-          <p className="text-xs text-zinc-400">
-            «Analizar URL» descarga el listado y propone los selectores (plantilla, heurística o
-            IA). Vos confirmás antes de guardar.
-          </p>
+          {!apiMode && (
+            <p className="text-xs text-zinc-400">
+              «Analizar URL» descarga el listado y propone los selectores (plantilla, heurística o
+              IA). Vos confirmás antes de guardar.
+            </p>
+          )}
 
           {probe && (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
@@ -519,28 +570,36 @@ export default function CvFuentes() {
           )}
 
           <div className="flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-3">
-            <div className="flex rounded-lg border border-zinc-300 p-0.5 text-xs">
-              <button
-                type="button"
-                onClick={() => setAdvanced(false)}
-                className={`rounded-md px-2.5 py-1 font-medium ${
-                  !advanced ? "bg-emerald-600 text-white" : "text-zinc-600 hover:bg-zinc-100"
-                }`}
-              >
-                Plantilla del portal
-              </button>
-              <button
-                type="button"
-                onClick={() => setAdvanced(true)}
-                className={`rounded-md px-2.5 py-1 font-medium ${
-                  advanced ? "bg-emerald-600 text-white" : "text-zinc-600 hover:bg-zinc-100"
-                }`}
-              >
-                Editor avanzado (CSS)
-              </button>
-            </div>
+            {!apiMode && (
+              <div className="flex rounded-lg border border-zinc-300 p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setAdvanced(false)}
+                  className={`rounded-md px-2.5 py-1 font-medium ${
+                    !advanced ? "bg-emerald-600 text-white" : "text-zinc-600 hover:bg-zinc-100"
+                  }`}
+                >
+                  Plantilla del portal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdvanced(true);
+                    setApiMode(false);
+                    setApiSpec("");
+                  }}
+                  className={`rounded-md px-2.5 py-1 font-medium ${
+                    advanced ? "bg-emerald-600 text-white" : "text-zinc-600 hover:bg-zinc-100"
+                  }`}
+                >
+                  Editor avanzado (CSS)
+                </button>
+              </div>
+            )}
             <span className="text-xs text-zinc-400">
-              {advanced
+              {apiMode
+                ? "Fuente por API oficial: no se raspa HTML."
+                : advanced
                 ? "Pegá los selectores CSS del listado. Usalo con sitios que permitan scraping."
                 : "Portales ya soportados: elegí plantilla y pegá la URL."}
             </span>
@@ -550,7 +609,7 @@ export default function CvFuentes() {
             <div className="grid grid-cols-1 gap-2">
               <select
                 value={templateId}
-                onChange={(e) => setTemplateId(e.target.value)}
+                onChange={(e) => onTemplateChange(e.target.value)}
                 required
                 className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
               >
@@ -558,6 +617,7 @@ export default function CvFuentes() {
                 {(templates ?? []).map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.label}
+                    {t.kind === "API_JSON" ? " · API oficial" : ""}
                   </option>
                 ))}
               </select>
@@ -569,7 +629,26 @@ export default function CvFuentes() {
             </div>
           )}
 
-          {advanced && (
+          {apiMode && (
+            <div className="space-y-2 rounded-lg bg-zinc-50 p-3">
+              <p className="text-xs text-zinc-500">
+                Fuente por <strong>API oficial</strong>: no se raspa HTML, se consulta el
+                endpoint del portal. La API key se lee de la variable de entorno indicada en{" "}
+                <code className="rounded bg-zinc-200 px-1">authEnv</code> (nunca se guarda acá).
+                Los valores con <code className="rounded bg-zinc-200 px-1">{"{{page}}"}</code> se
+                reemplazan en cada página.
+              </p>
+              <textarea
+                value={apiSpec}
+                onChange={(e) => setApiSpec(e.target.value)}
+                rows={16}
+                spellCheck={false}
+                className="w-full rounded-lg border border-zinc-300 bg-white p-3 font-mono text-[11px] leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+          )}
+
+          {advanced && !apiMode && (
             <div className="space-y-3 rounded-lg bg-zinc-50 p-3">
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 <Field
@@ -735,6 +814,14 @@ export default function CvFuentes() {
                 <div className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${s.enabled ? "bg-green-500" : "bg-gray-300"}`} />
                   <span className="font-medium">{s.name}</span>
+                  {s.kind === "API_JSON" && (
+                    <span
+                      className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700"
+                      title="Se consulta la API oficial del portal; no pasa por el worker Rust."
+                    >
+                      API oficial
+                    </span>
+                  )}
                 </div>
                 <div className="mt-0.5 truncate text-xs text-zinc-500">{s.listUrl}</div>
                 <div className="mt-1 text-xs text-zinc-400">
