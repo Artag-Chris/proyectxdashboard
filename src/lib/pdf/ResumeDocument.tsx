@@ -287,11 +287,13 @@ export function ResumeDocument({ data }: { data: ResumePdfData }) {
   const languages = readLanguages(profile);
   const contacts = contactRows(profile, atsMode);
 
-  // Los encabezados siguen el idioma del contenido (una vacante en inglés lleva
-  // el CV en inglés, y el ATS de esa empresa busca encabezados en inglés).
-  const headings = STANDARD_HEADINGS[
-    detectLanguage(content.summary, content.headline, ...(content.skills ?? []))
-  ];
+  // Los encabezados siguen el idioma declarado del borrador (selector) o, si es
+  // `auto`, el idioma del contenido: una vacante en inglés lleva el CV en inglés.
+  const language =
+    content.language === 'es' || content.language === 'en'
+      ? content.language
+      : detectLanguage(content.summary, content.headline, ...(content.skills ?? []));
+  const headings = STANDARD_HEADINGS[language];
 
   return (
     <Document

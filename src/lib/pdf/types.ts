@@ -19,6 +19,11 @@ export interface ResumePdfContent {
    * columnas, por eso es un interruptor y no el comportamiento por defecto.
    */
   atsMode?: boolean;
+  /**
+   * Idioma declarado del borrador (`auto|es|en`). Con `es`/`en` los encabezados
+   * salen en ese idioma; con `auto` (o ausente) se detectan del contenido.
+   */
+  language?: "auto" | "es" | "en";
 }
 
 export interface ContactLink {

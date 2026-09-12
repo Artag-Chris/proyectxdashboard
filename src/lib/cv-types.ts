@@ -6,6 +6,12 @@ export type VacancyStatus =
   | "APPLIED"
   | "IGNORED";
 
+/**
+ * Idioma de postulación de una HV. `auto` sigue el idioma de la vacante; `es`/`en`
+ * lo fuerzan. Se guarda por perfil (default) y por borrador (override).
+ */
+export type ApplyLanguage = "auto" | "es" | "en";
+
 export interface ScrapeRunInfo {
   status: "RUNNING" | "OK" | "FAILED";
   error: string | null;
@@ -223,6 +229,8 @@ export interface ResumeDraftContent {
    * interruptor porque se pierde fidelidad con el CV original de dos columnas.
    */
   atsMode?: boolean;
+  /** Idioma declarado del borrador (override por HV; sin él manda el perfil). */
+  language?: ApplyLanguage;
   /** Carta de presentación (se guarda dentro del mismo JSON del borrador). */
   coverLetter?: string;
   coverLetterSource?: "ia" | "plantilla" | "editada";

@@ -62,6 +62,13 @@ export function modalityLabel(value: string): string {
   return MODALITY_OPTIONS.find((o) => o.value === value)?.label ?? value;
 }
 
+/** Opciones del selector de idioma de postulación (perfil y HV). */
+export const APPLY_LANGUAGE_OPTIONS = [
+  { value: "auto", label: "Auto (idioma de la vacante)" },
+  { value: "es", label: "Español" },
+  { value: "en", label: "Inglés" },
+] as const;
+
 export function seniorityLabel(value?: string | null): string | null {
   if (!value) return null;
   return SENIORITY_OPTIONS.find((o) => o.value === value)?.label ?? value;

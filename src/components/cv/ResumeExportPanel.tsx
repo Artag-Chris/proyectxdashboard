@@ -3,8 +3,9 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { cvApi } from "@/lib/cv-api";
-import { Card } from "@/lib/cv-ui";
+import { APPLY_LANGUAGE_OPTIONS, Card } from "@/lib/cv-ui";
 import type {
+  ApplyLanguage,
   AtsAnalysis,
   ProfilePdfInfo,
   RefineResponse,
@@ -82,6 +83,11 @@ export function ResumeExportPanel({
   const [ats, setAts] = useState<AtsAnalysis | null>(null);
   const [atsLoading, setAtsLoading] = useState(false);
   const [atsError, setAtsError] = useState("");
+  // Idioma seleccionado en el panel (se aplica al confirmar, no al cambiar).
+  const [language, setLanguage] = useState<ApplyLanguage>(initialContent.language ?? "auto");
+  useEffect(() => {
+    setLanguage(content.language ?? "auto");
+  }, [content.language]);
 
   // Datos de contacto del perfil (email, teléfono, enlaces, idiomas).
   useEffect(() => {
@@ -260,6 +266,41 @@ export function ResumeExportPanel({
     }
   }
 
+  /**
+   * Aplica el idioma elegido: `auto` solo lo guarda (los encabezados se detectan
+   * solos); `es`/`en` traducen la HV actual con IA CONSERVANDO las ediciones.
+   */
+  async function applyLanguage() {
+    setBusy(true);
+    setMsg("");
+    try {
+      if (language === "auto") {
+        const next: ResumeDraftContent = { ...content, language: "auto" };
+        await cvApi.patch(`/resumes/${draftId}`, { content: next });
+        setContent(next);
+        setSavedJson(JSON.stringify(next));
+        setMsg("Idioma en automático: la HV sigue el idioma de la vacante.");
+        await onChanged();
+      } else {
+        const res = await cvApi.post<{
+          applied: boolean;
+          content: ResumeDraftContent;
+          note: string;
+        }>(`/resumes/${draftId}/translate`, { language });
+        if (res.applied) {
+          setContent(res.content);
+          setSavedJson(JSON.stringify(res.content));
+          await onChanged();
+        }
+        setMsg(res.note);
+      }
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   /** Renderiza el documento en el navegador y dispara la descarga. */
   async function download(kind: PreviewTab) {
     setBusy(true);
@@ -346,6 +387,36 @@ export function ResumeExportPanel({
 
         {msg && <p className="mt-2 text-xs text-emerald-700">{msg}</p>}
         {!canRender && <p className="mt-2 text-xs text-zinc-400">Cargando datos del perfil…</p>}
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 text-xs text-zinc-600">
+            Idioma de esta HV
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as ApplyLanguage)}
+              className="rounded-lg border border-zinc-300 px-2 py-1 text-xs"
+              title="Auto sigue el idioma de la vacante; Español/Inglés lo fuerzan."
+            >
+              {APPLY_LANGUAGE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            onClick={() => void applyLanguage()}
+            disabled={busy || !canRender || language === (content.language ?? "auto")}
+            className="rounded-lg border border-emerald-500 px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-40"
+          >
+            {language === "auto" ? "Guardar" : "Traducir y aplicar"}
+          </button>
+          <span className="text-xs text-zinc-400">
+            {language === "auto"
+              ? "La HV y la carta siguen el idioma de la vacante."
+              : "Traduce la HV actual (y la carta) sin perder tus ediciones."}
+          </span>
+        </div>
 
         <div className="mt-3 flex flex-wrap gap-1">
           {(

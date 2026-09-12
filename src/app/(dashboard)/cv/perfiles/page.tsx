@@ -2,13 +2,14 @@
 
 import { FormEvent, useState } from "react";
 import { cvApi } from "@/lib/cv-api";
-import { Card } from "@/lib/cv-ui";
+import { APPLY_LANGUAGE_OPTIONS, Card } from "@/lib/cv-ui";
 import { usePoll } from "@/lib/usePoll";
-import type { ProfileRow, ResumeRow, SourceRow } from "@/lib/cv-types";
+import type { ApplyLanguage, ProfileRow, ResumeRow, SourceRow } from "@/lib/cv-types";
 
 interface ProfileDetail extends ProfileRow {
   email: string | null;
   summary: string;
+  applyLanguage: ApplyLanguage;
   sources: {
     id: string;
     enabled: boolean;
@@ -140,6 +141,15 @@ export default function CvPerfiles() {
         : "Cron del perfil desactivado.",
       () => cvApi.patch(`/profiles/${profile.id}/schedule`, { scheduleMinutes: minutes }),
     );
+  }
+
+  /** Idioma por defecto de las HV de este perfil (auto = idioma de la vacante). */
+  async function saveLanguage(value: string) {
+    if (!profile) return;
+    await action("Idioma de postulación actualizado.", () =>
+      cvApi.patch(`/profiles/${profile.id}`, { applyLanguage: value }),
+    );
+    reloadDetail();
   }
 
   async function uploadPdf(e: FormEvent) {
@@ -521,6 +531,28 @@ export default function CvPerfiles() {
                 «Re-evaluar» vuelve a puntuar las vacantes ya guardadas de sus sitios contra su HV
                 (útil al cargar una HV nueva o al tildar un sitio).
               </p>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3">
+                <label className="flex items-center gap-2 text-xs text-zinc-600">
+                  Idioma de postulación
+                  <select
+                    value={detail?.applyLanguage ?? "auto"}
+                    onChange={(e) => void saveLanguage(e.target.value)}
+                    disabled={busy}
+                    className="rounded-lg border border-zinc-300 px-2 py-1 text-xs disabled:opacity-50"
+                    title="Idioma por defecto de las HV nuevas de este perfil."
+                  >
+                    {APPLY_LANGUAGE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <span className="text-xs text-zinc-400">
+                  Aplica a las HV nuevas; cada HV puede cambiarlo.
+                </span>
+              </div>
 
               {editOpen && (
                 <form onSubmit={saveEdit} className="mt-3 space-y-2 border-t border-zinc-100 pt-3">
