@@ -35,6 +35,8 @@ export default function CvVacanteDetalle() {
   const [busy, setBusy] = useState(false);
   const [forceMsg, setForceMsg] = useState("");
   const [copied, setCopied] = useState(false);
+  // null = todavía no se tocó el botón: se muestra si ya hay un plan generado.
+  const [prepOpen, setPrepOpen] = useState<boolean | null>(null);
 
   async function load() {
     try {
@@ -80,6 +82,10 @@ export default function CvVacanteDetalle() {
     ? (vac.profiles.find((p) => p.profileId === profileId) ?? null)
     : null;
   const shownStatus = scopedProfile?.status ?? vac.status;
+  // El módulo de preparación se abre desde el botón de la barra de acciones; si
+  // ya hay un plan generado, arranca visible para no tener que buscarlo.
+  const prep = scopedProfile?.interview ?? vac.interview;
+  const showPrep = prepOpen ?? !!prep;
 
   function selectProfile(nextProfileId: string) {
     const next = new URLSearchParams(searchParams.toString());
@@ -234,6 +240,19 @@ export default function CvVacanteDetalle() {
             {scopedProfile ? ` (${scopedProfile.profileName})` : ""}
           </button>
         )}
+        {shownStatus === "APPLIED" && (
+          <button
+            onClick={() => setPrepOpen(!showPrep)}
+            title="Plan de estudio y preguntas para preparar la entrevista de esta vacante"
+            className={`rounded-lg border px-3 py-1.5 text-sm ${
+              showPrep
+                ? "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-500"
+                : "border-emerald-300 font-medium text-emerald-700 hover:bg-emerald-50"
+            }`}
+          >
+            {showPrep ? "Ocultar preparación" : "Preparación de entrevista"}
+          </button>
+        )}
       </div>
 
       {/*
@@ -386,10 +405,10 @@ export default function CvVacanteDetalle() {
       </div>
 
       {/*
-        Preparación de entrevista: aparece SOLO cuando la postulación está
-        aplicada (el gate es el inverso de «Marcar aplicada»).
+        Módulo de preparación: solo cuando la postulación está aplicada y el
+        usuario abrió el botón de la barra de acciones.
       */}
-      {shownStatus === "APPLIED" && (
+      {shownStatus === "APPLIED" && showPrep && (
         <div className="mt-4">
           <InterviewPrepPanel
             vacancyId={vac.id}

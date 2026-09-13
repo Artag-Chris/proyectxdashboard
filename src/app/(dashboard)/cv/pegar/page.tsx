@@ -181,8 +181,8 @@ export default function CvPegarOferta() {
       <p className="mt-1 text-sm text-zinc-500">
         Para ofertas que no se pueden scrapear (LinkedIn, portales con login…). Pegá el texto y se
         genera la hoja de vida personalizada y su carta, con el mismo motor de la pestaña Vacantes.
-        Si el texto trae el link del aviso (correos de alerta), se toma solo: no hace falta
-        cargarlo a mano.
+        Pegá también la URL del aviso para poder aplicar directo; si el texto ya trae el link
+        (correos de alerta), se toma solo.
       </p>
 
       <Card className="mt-3">
@@ -210,12 +210,29 @@ export default function CvPegarOferta() {
             onClick={() => setShowOptional((v) => !v)}
             className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs text-zinc-600 hover:bg-zinc-100"
           >
-            {showOptional ? "Ocultar datos opcionales" : "Datos opcionales (puesto, empresa, URL)"}
+            {showOptional ? "Ocultar datos opcionales" : "Datos opcionales (puesto, empresa)"}
           </button>
         </div>
 
+        {/* La URL va siempre a la vista: es lo que deja el botón «Aplicar ↗» usable. */}
+        <div className="mt-3">
+          <label className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+            URL de la oferta (opcional)
+          </label>
+          <input
+            className={`mt-1 w-full ${INPUT}`}
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://www.linkedin.com/jobs/view/…"
+          />
+          <p className="mt-1 text-xs text-zinc-400">
+            Pegala si la tenés. Si la dejás vacía, se busca el link dentro del texto (correos de
+            alerta).
+          </p>
+        </div>
+
         {showOptional && (
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input
               className={INPUT}
               value={title}
@@ -227,12 +244,6 @@ export default function CvPegarOferta() {
               value={company}
               onChange={(e) => setCompany(e.target.value)}
               placeholder="Empresa (ej: BairesDev)"
-            />
-            <input
-              className={INPUT}
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="URL de la oferta"
             />
           </div>
         )}
