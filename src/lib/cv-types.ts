@@ -180,6 +180,8 @@ export interface VacancyDetail {
     coverLetterDraft: string | null;
   } | null;
   resume: ResumeDraft | null;
+  /** Preparación de entrevista del perfil en foco (null si no se generó). */
+  interview: InterviewPrep | null;
   /** Una entrada por perfil que evaluó la vacante (match y HV propios). */
   profiles: VacancyDetailProfile[];
   /** Oferta pegada a mano (fuente sintética MANUAL), no scrapeada. */
@@ -250,6 +252,55 @@ export interface ResumeDraftContent {
   coverLetterUpdatedAt?: string;
 }
 
+/** Un tema del plan de estudio/repaso de la preparación de entrevista. */
+export interface InterviewStudyTopic {
+  topic: string;
+  why?: string;
+  resources?: string[];
+  practice?: string;
+  /** Avance marcado por el usuario (se persiste al editar el plan). */
+  done?: boolean;
+}
+
+export interface InterviewQuestion {
+  question: string;
+  category?: string;
+  answerOutline?: string;
+}
+
+export interface InterviewTrickyQuestion {
+  question: string;
+  whyTricky?: string;
+  howToAnswer?: string;
+}
+
+export interface InterviewChecklistItem {
+  item: string;
+  done: boolean;
+}
+
+/** Plan de preparación de entrevista generado por la IA (o base sin proveedor). */
+export interface InterviewPrepContent {
+  summary?: string;
+  focusAreas?: string[];
+  studyPlan?: InterviewStudyTopic[];
+  likelyQuestions?: InterviewQuestion[];
+  trickyQuestions?: InterviewTrickyQuestion[];
+  redFlags?: string[];
+  questionsToAsk?: string[];
+  checklist?: InterviewChecklistItem[];
+}
+
+/** Preparación de entrevista persistida por (vacante, perfil). */
+export interface InterviewPrep {
+  id: string;
+  profileId: string;
+  version: number;
+  status: string;
+  source: "ia" | "plantilla" | "editada";
+  content: InterviewPrepContent;
+}
+
 export type AtsGrade = "PASS" | "RISK" | "FAIL";
 
 export type AtsKeywordState = "covered" | "partial" | "missing";
@@ -309,6 +360,8 @@ export interface VacancyDetailProfile {
   score: number | null;
   match: VacancyDetail["match"];
   resume: ResumeDraft | null;
+  /** Preparación de entrevista de ESTE perfil. */
+  interview: InterviewPrep | null;
 }
 
 /** Respuesta de GET /profiles/:id (lo que necesita el PDF para el contacto). */

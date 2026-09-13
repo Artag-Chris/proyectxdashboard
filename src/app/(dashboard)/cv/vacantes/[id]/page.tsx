@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ResumeExportPanel } from "@/components/cv/ResumeExportPanel";
+import { InterviewPrepPanel } from "@/components/cv/InterviewPrepPanel";
 import { cvApi } from "@/lib/cv-api";
 import { Card, Score, StatusBadge } from "@/lib/cv-ui";
 import type { VacancyDetail } from "@/lib/cv-types";
@@ -383,6 +384,23 @@ export default function CvVacanteDetalle() {
           )}
         </div>
       </div>
+
+      {/*
+        Preparación de entrevista: aparece SOLO cuando la postulación está
+        aplicada (el gate es el inverso de «Marcar aplicada»).
+      */}
+      {shownStatus === "APPLIED" && (
+        <div className="mt-4">
+          <InterviewPrepPanel
+            vacancyId={vac.id}
+            profileId={scopedProfile?.profileId ?? vac.interview?.profileId ?? ""}
+            prep={scopedProfile?.interview ?? vac.interview}
+            vacancyTitle={vac.title}
+            company={vac.company}
+            onChanged={load}
+          />
+        </div>
+      )}
     </div>
   );
 }
