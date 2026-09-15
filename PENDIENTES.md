@@ -10,6 +10,7 @@
 - [x] Burbuja distintiva de respuestas humanas (rol `HUMAN`)
 - [x] Polling del detalle mientras la conversación está escalada
 - [x] Explorador de chats de solo lectura (`/chats`): todas las conversaciones en cualquier estado, filtros por estado/canal/búsqueda, paginación y "cargar mensajes anteriores" en el detalle
+- [x] Panel de conocimiento: acepta `.md`, `.markdown`, `.txt`, `.pdf`, `.csv` y `.xlsx` en la subida (antes solo PDF/CSV) y avisa de que re-subir el mismo nombre actualiza el documento
 
 ## Prioridad media
 - [ ] Indicador de escalaciones no leídas

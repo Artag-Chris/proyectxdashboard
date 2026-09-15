@@ -264,7 +264,7 @@ export default function KnowledgePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">T\u00edtulo</label>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">T&iacute;tulo</label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -299,16 +299,19 @@ export default function KnowledgePage() {
               ) : (
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 mb-1">
-                    Archivo (PDF o CSV)
+                    Archivo (PDF, CSV, Excel, Markdown o TXT)
                   </label>
                   <input
                     ref={fileRef}
                     type="file"
-                    accept=".pdf,.csv"
+                    accept=".md,.markdown,.txt,.pdf,.csv,.xlsx"
                     onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                     className="w-full text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-zinc-100 file:text-sm file:font-medium hover:file:bg-zinc-200"
                   />
-                  <p className="text-xs text-zinc-400 mt-1">M\u00e1ximo 20 MB</p>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    M&aacute;ximo 20 MB. Volver a subir un archivo con el mismo nombre lo
+                    actualiza.
+                  </p>
                 </div>
               )}
 
