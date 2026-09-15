@@ -48,11 +48,11 @@ export default function CvOverview() {
         (vectores en pgvector + análisis IA) y te avisa cuando hay un borrador listo.
       </p>
 
-      <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {cards.map((c) => (
           <Link key={c.label} href={c.href} className="block">
             <Card className="hover:border-emerald-400">
-              <div className="text-2xl font-bold">{c.value}</div>
+              <div className="text-xl font-bold sm:text-2xl">{c.value}</div>
               <div className="mt-1 text-xs text-zinc-500">{c.label}</div>
             </Card>
           </Link>
@@ -65,8 +65,8 @@ export default function CvOverview() {
           <ul className="space-y-1 text-sm">
             {(profiles ?? []).length === 0 && <li className="text-zinc-400">Sin perfiles.</li>}
             {(profiles ?? []).map((p) => (
-              <li key={p.id} className="flex justify-between gap-2 border-b border-zinc-100 py-1 last:border-0">
-                <span>
+              <li key={p.id} className="flex flex-wrap justify-between gap-x-3 gap-y-1 border-b border-zinc-100 py-1 last:border-0">
+                <span className="break-words">
                   {p.name}
                   {p.isPrimary && " ★"}
                 </span>

@@ -391,7 +391,7 @@ export function ResumeExportPanel({
                 onClick={() => void save()}
                 disabled={busy}
                 title="Los cambios (tuyos o de la IA) no están guardados"
-                className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
+                className="rounded-lg bg-amber-600 px-3 py-2.5 sm:py-1.5 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
               >
                 Guardar cambios
               </button>
@@ -399,7 +399,7 @@ export function ResumeExportPanel({
             <button
               onClick={() => setOpen(true)}
               disabled={!canRender}
-              className="rounded-lg border border-emerald-500 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+              className="rounded-lg border border-emerald-500 px-3 py-2.5 sm:py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
             >
               Editar y previsualizar
             </button>
@@ -411,7 +411,7 @@ export function ResumeExportPanel({
                   ? "Descarga la HV en Modo ATS: una columna y encabezados estándar"
                   : "Descarga la HV en la plantilla de dos columnas"
               }
-              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+              className="rounded-lg bg-emerald-600 px-3 py-2.5 sm:py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
             >
               {content.atsMode ? "Descargar PDF (ATS)" : "Descargar PDF"}
             </button>
@@ -427,7 +427,7 @@ export function ResumeExportPanel({
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as ApplyLanguage)}
-              className="rounded-lg border border-zinc-300 px-2 py-1 text-xs"
+              className="rounded-lg border border-zinc-300 px-2 py-2 text-base sm:py-1 sm:text-xs"
               title="Auto sigue el idioma de la vacante; Español/Inglés lo fuerzan."
             >
               {APPLY_LANGUAGE_OPTIONS.map((o) => (
@@ -462,7 +462,7 @@ export function ResumeExportPanel({
             <button
               key={value}
               onClick={() => setTab(value)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+              className={`rounded-lg px-3 py-2.5 sm:py-1.5 text-xs font-medium ${
                 tab === value
                   ? "bg-emerald-600 text-white"
                   : "border border-zinc-300 text-zinc-600 hover:bg-zinc-100"
@@ -521,7 +521,7 @@ export function ResumeExportPanel({
           <button
             onClick={() => void generateLetter()}
             disabled={busy || !canRender}
-            className="mt-2 rounded-lg border border-emerald-500 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+            className="mt-2 rounded-lg border border-emerald-500 px-3 py-2.5 sm:py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
           >
             {hasLetter ? "Regenerar carta con IA" : "Generar carta con IA"}
           </button>

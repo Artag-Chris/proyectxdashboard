@@ -57,8 +57,8 @@ function Card({ label, value, hint }: { label: string; value: string; hint?: str
   return (
     <div className="bg-white rounded-xl border border-zinc-200 p-4">
       <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
-      <p className="text-2xl font-semibold mt-1">{value}</p>
-      {hint && <p className="text-xs text-zinc-400 mt-1">{hint}</p>}
+      <p className="text-xl font-semibold mt-1 break-words sm:text-2xl">{value}</p>
+      {hint && <p className="text-xs text-zinc-400 mt-1 break-words">{hint}</p>}
     </div>
   );
 }
@@ -111,12 +111,12 @@ export default function GrowthPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold mb-1">Growth</h1>
+          <h1 className="text-lg font-bold mb-1 sm:text-xl">Growth</h1>
           <p className="text-sm text-zinc-500">
-            KPIs del negocio y asesor de análisis basado en los datos reales de Atiende.
+            KPIs del negocio y asesor de análisis basados en los datos reales de Atiende.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -124,7 +124,7 @@ export default function GrowthPage() {
           <select
             value={days}
             onChange={(e) => setDays(Number(e.target.value))}
-            className="px-3 py-2 rounded-lg border border-zinc-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-zinc-900"
+            className="flex-1 px-3 py-2.5 rounded-lg border border-zinc-300 text-base bg-white focus:outline-none focus:ring-2 focus:ring-zinc-900 sm:flex-none sm:py-2 sm:text-sm"
           >
             <option value={7}>7 días</option>
             <option value={30}>30 días</option>
@@ -137,7 +137,7 @@ export default function GrowthPage() {
 
       {metrics && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4">
             <Card
               label="Conversaciones"
               value={String(metrics.conversationsTotal)}
@@ -198,7 +198,7 @@ export default function GrowthPage() {
 
         {askError && <p className="text-sm text-red-600">{askError}</p>}
         {answer && (
-          <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 text-sm whitespace-pre-wrap">
+          <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 text-sm whitespace-pre-wrap break-words">
             {answer.answer}
             <div className="mt-3 pt-3 border-t border-zinc-200 text-xs text-zinc-500 space-y-1">
               <p>{answer.model}</p>
@@ -217,13 +217,13 @@ export default function GrowthPage() {
             rows={3}
             maxLength={2000}
             placeholder="Ej: ¿Qué servicios generan más cotizaciones y qué debo priorizar?"
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 resize-y"
+            className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 text-base focus:outline-none focus:ring-2 focus:ring-zinc-900 resize-y sm:text-sm"
           />
           <div className="flex justify-end">
             <button
               type="submit"
               disabled={asking || !question.trim()}
-              className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-sm hover:bg-zinc-700 disabled:opacity-50 transition-colors"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 text-white text-sm hover:bg-zinc-700 disabled:opacity-50 transition-colors sm:w-auto"
             >
               {asking ? "Analizando..." : "Preguntar al asesor"}
             </button>

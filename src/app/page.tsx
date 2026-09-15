@@ -16,9 +16,9 @@ export default function Home() {
   if (user) return null;  
 
   return (
-    <div className="flex h-full items-center justify-center">
+    <div className="flex min-h-dvh items-center justify-center px-4">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold">Atiende Dashboard</h1>
+        <h1 className="text-3xl font-bold sm:text-4xl">Atiende Dashboard</h1>
         <p className="text-zinc-500">Panel de administraci&oacute;n</p>
         <Link
           href="/login"

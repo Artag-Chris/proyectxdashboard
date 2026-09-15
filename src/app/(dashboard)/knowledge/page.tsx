@@ -172,11 +172,11 @@ export default function KnowledgePage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold">Conocimiento</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h1 className="text-lg font-bold sm:text-xl">Conocimiento</h1>
         <button
           onClick={() => { resetForm(); setShowModal(true); }}
-          className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-sm hover:bg-zinc-700 transition-colors"
+          className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 text-white text-sm hover:bg-zinc-700 transition-colors sm:w-auto"
         >
           Agregar
         </button>
@@ -191,17 +191,17 @@ export default function KnowledgePage() {
           {docs.map((doc) => (
             <div
               key={doc.id}
-              className="bg-white rounded-xl shadow-sm border border-zinc-200 p-4 flex items-start justify-between"
+              className="bg-white rounded-xl shadow-sm border border-zinc-200 p-4 flex flex-wrap items-start gap-2"
             >
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex flex-wrap items-center gap-1.5 mb-1">
                   <h3 className="font-medium text-sm truncate">{doc.title}</h3>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 shrink-0">
                     {KIND_LABELS[doc.kind] ?? doc.kind}
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 truncate">{doc.source}</p>
-                <div className="flex items-center gap-3 mt-2">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(doc.status)}`}>
                     {doc.status}
                   </span>
@@ -211,12 +211,12 @@ export default function KnowledgePage() {
                   <span className="text-xs text-zinc-400">{formatDate(doc.createdAt)}</span>
                 </div>
                 {doc.errorMessage && (
-                  <p className="text-xs text-red-500 mt-1">{doc.errorMessage}</p>
+                  <p className="text-xs text-red-500 mt-1 break-words">{doc.errorMessage}</p>
                 )}
               </div>
               <button
                 onClick={() => handleDelete(doc.id)}
-                className="text-xs text-red-500 hover:text-red-700 ml-4 shrink-0"
+                className="shrink-0 px-2 py-2 text-xs text-red-500 hover:text-red-700 ml-auto"
               >
                 Eliminar
               </button>
@@ -226,11 +226,11 @@ export default function KnowledgePage() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-lg mx-4 p-6">
-            <h2 className="text-lg font-bold mb-4">Agregar conocimiento</h2>
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-3 py-4 sm:items-center">
+          <div className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-xl bg-white p-4 shadow-lg sm:p-6">
+            <h2 className="mb-4 shrink-0 text-base font-bold sm:text-lg">Agregar conocimiento</h2>
 
-            <div className="flex gap-1 mb-4 bg-zinc-100 rounded-lg p-1">
+            <div className="mb-4 flex shrink-0 gap-1 rounded-lg bg-zinc-100 p-1">
               <button
                 onClick={() => setTab("text")}
                 className={`flex-1 py-1.5 text-sm rounded-md transition-colors ${
@@ -249,13 +249,13 @@ export default function KnowledgePage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto">
               <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-1">Tipo</label>
                 <select
                   value={kind}
                   onChange={(e) => setKind(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                  className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 text-base focus:outline-none focus:ring-2 focus:ring-zinc-900 sm:text-sm"
                 >
                   {KNOWLEDGE_KINDS.map((k) => (
                     <option key={k} value={k}>{KIND_LABELS[k]}</option>
@@ -269,7 +269,7 @@ export default function KnowledgePage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={tab === "file" ? "Opcional — por defecto nombre del archivo" : ""}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                  className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 text-base focus:outline-none focus:ring-2 focus:ring-zinc-900 sm:text-sm"
                 />
               </div>
 
@@ -283,7 +283,7 @@ export default function KnowledgePage() {
                       value={source}
                       onChange={(e) => setSource(e.target.value)}
                       placeholder="ej: horarios-verano"
-                      className="w-full px-3 py-2 rounded-lg border border-zinc-300 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                      className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 text-base focus:outline-none focus:ring-2 focus:ring-zinc-900 sm:text-sm"
                     />
                   </div>
                   <div>
@@ -292,7 +292,7 @@ export default function KnowledgePage() {
                       value={text}
                       onChange={(e) => setText(e.target.value)}
                       rows={6}
-                      className="w-full px-3 py-2 rounded-lg border border-zinc-300 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 resize-y"
+                      className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 text-base focus:outline-none focus:ring-2 focus:ring-zinc-900 resize-y sm:text-sm"
                     />
                   </div>
                 </>
@@ -316,18 +316,18 @@ export default function KnowledgePage() {
                 <p className="text-sm text-red-600">{submitError}</p>
               )}
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={() => { setShowModal(false); resetForm(); }}
-                  className="px-4 py-2 rounded-lg text-sm text-zinc-600 hover:bg-zinc-100 transition-colors"
+                  className="px-4 py-2.5 rounded-lg text-sm text-zinc-600 hover:bg-zinc-100 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-sm hover:bg-zinc-700 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2.5 rounded-lg bg-zinc-900 text-white text-sm hover:bg-zinc-700 disabled:opacity-50 transition-colors"
                 >
                   {submitting ? "Guardando..." : "Guardar"}
                 </button>

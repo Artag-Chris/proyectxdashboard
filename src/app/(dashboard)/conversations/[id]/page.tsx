@@ -233,10 +233,10 @@ export default function ConversationPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold">
+      <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-start sm:justify-between sm:mb-6">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h1 className="text-lg font-bold break-words sm:text-xl">
               {conv.customerName ?? conv.customerIdentifier}
             </h1>
             <span
@@ -246,7 +246,7 @@ export default function ConversationPage() {
             </span>
           </div>
           {conv.customerName && (
-            <p className="text-sm text-zinc-400">{conv.customerIdentifier}</p>
+            <p className="text-sm text-zinc-400 break-words">{conv.customerIdentifier}</p>
           )}
           <p className="text-sm text-zinc-500">
             Estado: <span className="capitalize">{conv.status.toLowerCase()}</span>
@@ -256,7 +256,7 @@ export default function ConversationPage() {
           <button
             onClick={handleResolve}
             disabled={resolving}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-50"
+            className="w-full shrink-0 px-4 py-2.5 text-sm font-medium rounded-lg bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-50 sm:w-auto"
           >
             {resolving ? "Resolviendo..." : "Resolver conversaci\u00f3n"}
           </button>
@@ -278,10 +278,10 @@ export default function ConversationPage() {
         {(conv.messages ?? []).map((msg) => (
           <div
             key={msg.id}
-            className={`flex ${msg.role === "USER" ? "justify-start" : "justify-end"}`}
+            className={`flex min-w-0 ${msg.role === "USER" ? "justify-start" : "justify-end"}`}
           >
             <div
-              className={`max-w-[80%] rounded-xl px-4 py-2 text-sm ${bubbleClass(msg.role)}`}
+              className={`max-w-[85%] min-w-0 break-words rounded-xl px-3 py-2 text-sm sm:px-4 ${bubbleClass(msg.role)}`}
             >
               {bubbleLabel(msg.role) && (
                 <p className="text-xs opacity-70 mb-1">{bubbleLabel(msg.role)}</p>
@@ -293,12 +293,10 @@ export default function ConversationPage() {
         ))}
       </div>
 
-      <div ref={bottomRef} />
-
       {isEscalated && (
         <form
           onSubmit={handleSend}
-          className="sticky bottom-0 mt-6 bg-white border-t border-zinc-200 pt-4 flex gap-2"
+          className="sticky bottom-0 -mx-4 mt-6 flex gap-2 border-t border-zinc-200 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:-mx-6 md:px-6 md:pt-4"
         >
           <textarea
             value={draft}
@@ -306,17 +304,19 @@ export default function ConversationPage() {
             placeholder="Escribe tu respuesta al cliente..."
             rows={2}
             maxLength={1000}
-            className="flex-1 resize-none rounded-xl border border-zinc-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="min-w-0 flex-1 resize-none rounded-xl border border-zinc-300 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:px-4 sm:text-sm"
           />
           <button
             type="submit"
             disabled={sending || !draft.trim()}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 self-end"
+            className="shrink-0 self-end px-4 py-2.5 text-sm font-medium rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50"
           >
             {sending ? "Enviando..." : "Enviar"}
           </button>
         </form>
       )}
+
+      <div ref={bottomRef} />
     </div>
   );
 }

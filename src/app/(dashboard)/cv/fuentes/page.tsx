@@ -154,7 +154,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="rounded-lg border border-zinc-300 px-3 py-1.5 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="rounded-lg border border-zinc-300 px-3 py-2.5 font-mono text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:py-1.5 sm:text-xs"
       />
     </label>
   );
@@ -425,7 +425,7 @@ export default function CvFuentes() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-bold">Fuentes de vacantes</h1>
           <span className="text-xs text-zinc-500">
@@ -441,7 +441,7 @@ export default function CvFuentes() {
               openCreate();
             }
           }}
-          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500"
+          className="w-full rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 sm:w-auto"
         >
           {showForm ? "Cerrar" : "+ Nueva fuente"}
         </button>
@@ -462,14 +462,14 @@ export default function CvFuentes() {
               onChange={(e) => setName(e.target.value)}
               placeholder="Nombre (ej. Computrabajo React)"
               required
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="rounded-lg border border-zinc-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:py-2 sm:text-sm"
             />
             <label className="flex items-center gap-2 text-sm text-zinc-600">
               Revisar cada
               <select
                 value={hours}
                 onChange={(e) => setHours(e.target.value)}
-                className="rounded-lg border border-zinc-300 px-2 py-2 text-sm"
+                className="rounded-lg border border-zinc-300 px-2 py-2.5 text-base sm:py-2 sm:text-sm"
               >
                 {HOUR_OPTIONS.map((h) => (
                   <option key={h} value={String(h)}>
@@ -488,7 +488,7 @@ export default function CvFuentes() {
                 apiMode ? "URL de búsqueda del portal (referencia)" : "URL del listado que scrapea el cron"
               }
               required
-              className="min-w-[16rem] flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full min-w-0 flex-1 rounded-lg border border-zinc-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:min-w-[16rem] sm:py-2 sm:text-sm"
             />
             {/* El probe analiza HTML: no aplica a una fuente por API. */}
             {!apiMode && (
@@ -533,32 +533,74 @@ export default function CvFuentes() {
               ))}
 
               {probe.preview.length > 0 && (
-                <div className="mt-2 overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="text-zinc-500">
-                      <tr>
-                        <th className="pr-3 font-medium">Título</th>
-                        <th className="pr-3 font-medium">Empresa</th>
-                        <th className="pr-3 font-medium">Ubicación</th>
-                        <th className="pr-3 font-medium">Salario</th>
-                        <th className="font-medium">Descripción</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {probe.preview.map((item, i) => (
-                        <tr key={`${item.url}-${i}`} className="border-t border-emerald-100">
-                          <td className="max-w-[16rem] truncate pr-3 py-1">{item.title}</td>
-                          <td className="max-w-[10rem] truncate pr-3 py-1">{item.company ?? "—"}</td>
-                          <td className="max-w-[10rem] truncate pr-3 py-1">{item.location ?? "—"}</td>
-                          <td className="max-w-[9rem] truncate pr-3 py-1">{item.salary ?? "—"}</td>
-                          <td className="py-1">
-                            {item.descriptionChars > 0 ? `${item.descriptionChars} chars` : "—"}
-                          </td>
+                <>
+                  <div className="mt-2 hidden overflow-x-auto sm:block">
+                    <table className="w-full text-left text-xs">
+                      <thead className="text-zinc-500">
+                        <tr>
+                          <th className="pr-3 font-medium">Título</th>
+                          <th className="pr-3 font-medium">Empresa</th>
+                          <th className="pr-3 font-medium">Ubicación</th>
+                          <th className="pr-3 font-medium">Salario</th>
+                          <th className="font-medium">Descripción</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {probe.preview.map((item, i) => (
+                          <tr key={`${item.url}-${i}`} className="border-t border-emerald-100">
+                            <td className="max-w-[16rem] truncate pr-3 py-1">{item.title}</td>
+                            <td className="max-w-[10rem] truncate pr-3 py-1">{item.company ?? "—"}</td>
+                            <td className="max-w-[10rem] truncate pr-3 py-1">{item.location ?? "—"}</td>
+                            <td className="max-w-[9rem] truncate pr-3 py-1">{item.salary ?? "—"}</td>
+                            <td className="py-1">
+                              {item.descriptionChars > 0 ? `${item.descriptionChars} chars` : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* En celular la tabla no cabe: cada vacante se muestra como tarjeta. */}
+                  <ul className="mt-2 space-y-2 sm:hidden">
+                    {probe.preview.map((item, i) => (
+                      <li
+                        key={`${item.url}-${i}`}
+                        className="rounded-lg border border-emerald-200 bg-white p-2"
+                      >
+                        <p className="text-xs font-semibold break-words">{item.title}</p>
+                        <dl className="mt-1 space-y-0.5 text-xs">
+                          <div className="flex gap-1">
+                            <dt className="shrink-0 text-zinc-400">Empresa:</dt>
+                            <dd className="min-w-0 break-words text-zinc-600">
+                              {item.company ?? "—"}
+                            </dd>
+                          </div>
+                          <div className="flex gap-1">
+                            <dt className="shrink-0 text-zinc-400">Ubicación:</dt>
+                            <dd className="min-w-0 break-words text-zinc-600">
+                              {item.location ?? "—"}
+                            </dd>
+                          </div>
+                          <div className="flex gap-1">
+                            <dt className="shrink-0 text-zinc-400">Salario:</dt>
+                            <dd className="min-w-0 break-words text-zinc-600">
+                              {item.salary ?? "—"}
+                            </dd>
+                          </div>
+                          <div className="flex gap-1">
+                            <dt className="shrink-0 text-zinc-400">Descripción:</dt>
+                            <dd className="min-w-0 break-words text-zinc-600">
+                              {item.descriptionChars > 0
+                                ? `${item.descriptionChars} chars`
+                                : "—"}
+                            </dd>
+                          </div>
+                        </dl>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
 
               {probe.diagnostics.itemCount === 0 && (
@@ -575,7 +617,7 @@ export default function CvFuentes() {
                 <button
                   type="button"
                   onClick={() => setAdvanced(false)}
-                  className={`rounded-md px-2.5 py-1 font-medium ${
+                  className={`rounded-md px-3 py-1.5 font-medium ${
                     !advanced ? "bg-emerald-600 text-white" : "text-zinc-600 hover:bg-zinc-100"
                   }`}
                 >
@@ -588,7 +630,7 @@ export default function CvFuentes() {
                     setApiMode(false);
                     setApiSpec("");
                   }}
-                  className={`rounded-md px-2.5 py-1 font-medium ${
+                  className={`rounded-md px-3 py-1.5 font-medium ${
                     advanced ? "bg-emerald-600 text-white" : "text-zinc-600 hover:bg-zinc-100"
                   }`}
                 >
@@ -611,7 +653,7 @@ export default function CvFuentes() {
                 value={templateId}
                 onChange={(e) => onTemplateChange(e.target.value)}
                 required
-                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-zinc-300 px-3 py-2.5 text-base sm:py-2 sm:text-sm"
               >
                 <option value="">Plantilla…</option>
                 {(templates ?? []).map((t) => (
@@ -643,7 +685,7 @@ export default function CvFuentes() {
                 onChange={(e) => setApiSpec(e.target.value)}
                 rows={16}
                 spellCheck={false}
-                className="w-full rounded-lg border border-zinc-300 bg-white p-3 font-mono text-[11px] leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full rounded-lg border border-zinc-300 bg-white p-3 font-mono text-base leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:text-[11px]"
               />
             </div>
           )}
@@ -750,6 +792,7 @@ export default function CvFuentes() {
                 <label className="flex items-center gap-2 text-xs text-zinc-600">
                   <input
                     type="checkbox"
+                    className="h-5 w-5"
                     checked={lim.fetchDetail}
                     onChange={(e) => setLimit("fetchDetail")(e.target.checked)}
                   />
@@ -758,6 +801,7 @@ export default function CvFuentes() {
                 <label className="flex items-center gap-2 text-xs text-zinc-600">
                   <input
                     type="checkbox"
+                    className="h-5 w-5"
                     checked={lim.respectRobots}
                     onChange={(e) => setLimit("respectRobots")(e.target.checked)}
                   />
@@ -849,43 +893,45 @@ export default function CvFuentes() {
                   </pre>
                 )}
               </div>
-              <button
-                onClick={() => openEdit(s)}
-                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500"
-              >
-                Editar
-              </button>
-              <button
-                onClick={() => setOpenRecipe(recipeOpen ? null : s.id)}
-                className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-500 hover:bg-zinc-50"
-              >
-                {recipeOpen ? "Ocultar receta" : "Ver receta"}
-              </button>
-              <button
-                onClick={() => void toggle(s)}
-                disabled={busyId === s.id}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
-                  s.enabled
-                    ? "border border-zinc-300 text-zinc-500 hover:bg-zinc-50"
-                    : "bg-emerald-600 text-white hover:bg-emerald-500"
-                }`}
-              >
-                {s.enabled ? "Deshabilitar" : "Habilitar"}
-              </button>
-              <button
-                onClick={() => void run(s)}
-                disabled={busyId === s.id || !s.enabled}
-                className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-700 disabled:opacity-40"
-              >
-                {busyId === s.id ? "…" : "Correr ahora"}
-              </button>
-              <button
-                onClick={() => void removeSource(s)}
-                disabled={busyId === s.id}
-                className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40"
-              >
-                Borrar
-              </button>
+              <div className="flex w-full flex-wrap gap-2 border-t border-zinc-100 pt-2 sm:w-auto sm:border-0 sm:pt-0">
+                <button
+                  onClick={() => openEdit(s)}
+                  className="flex-1 min-w-[7rem] rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500 sm:flex-none sm:py-1.5"
+                >
+                  Editar
+                </button>
+                <button
+                  onClick={() => setOpenRecipe(recipeOpen ? null : s.id)}
+                  className="flex-1 min-w-[7rem] rounded-lg border border-zinc-300 px-3 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-50 sm:flex-none sm:py-1.5"
+                >
+                  {recipeOpen ? "Ocultar receta" : "Ver receta"}
+                </button>
+                <button
+                  onClick={() => void toggle(s)}
+                  disabled={busyId === s.id}
+                  className={`flex-1 min-w-[7rem] rounded-lg px-3 py-2 text-xs font-semibold sm:flex-none sm:py-1.5 ${
+                    s.enabled
+                      ? "border border-zinc-300 text-zinc-500 hover:bg-zinc-50"
+                      : "bg-emerald-600 text-white hover:bg-emerald-500"
+                  }`}
+                >
+                  {s.enabled ? "Deshabilitar" : "Habilitar"}
+                </button>
+                <button
+                  onClick={() => void run(s)}
+                  disabled={busyId === s.id || !s.enabled}
+                  className="flex-1 min-w-[7rem] rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-700 disabled:opacity-40 sm:flex-none sm:py-1.5"
+                >
+                  {busyId === s.id ? "…" : "Correr ahora"}
+                </button>
+                <button
+                  onClick={() => void removeSource(s)}
+                  disabled={busyId === s.id}
+                  className="flex-1 min-w-[7rem] rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40 sm:flex-none sm:py-1.5"
+                >
+                  Borrar
+                </button>
+              </div>
             </div>
           );
         })}

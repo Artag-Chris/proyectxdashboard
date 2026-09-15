@@ -13,7 +13,7 @@
 ## Prioridad media
 - [ ] Indicador de escalaciones no leídas
 - [ ] Estados de conversación (resuelta, abandonada) visibles en la lista
-- [ ] Responsive / mobile
+- [x] Responsive / mobile
 
 ## Prioridad baja
 - [ ] Logout button

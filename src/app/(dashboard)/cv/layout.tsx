@@ -36,14 +36,14 @@ export default function CvLayout({ children }: { children: React.ReactNode }) {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 pb-2">
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-nowrap gap-1 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible md:pb-0">
           {TABS.map((t) => {
             const active = pathname === t.href || pathname.startsWith(`${t.href}/`);
             return (
               <Link
                 key={t.href}
                 href={t.href}
-                className={`rounded-lg px-3 py-2 text-sm transition-colors ${
+                className={`whitespace-nowrap rounded-lg px-3 py-2.5 text-sm transition-colors ${
                   active ? "bg-emerald-600 text-white" : "text-zinc-600 hover:bg-zinc-100"
                 }`}
               >
@@ -52,14 +52,16 @@ export default function CvLayout({ children }: { children: React.ReactNode }) {
             );
           })}
         </div>
-        <div className="flex items-center gap-2 text-xs text-zinc-500">
-          <span>{email ? `Sesión: ${email}` : "Sesión de atiende"}</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+          <span className="max-w-[60vw] truncate">
+            {email ? `Sesión: ${email}` : "Sesión de atiende"}
+          </span>
           <button
             onClick={() => {
               localStorage.removeItem("atiende_auth");
               router.replace("/login");
             }}
-            className="rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+            className="rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50"
           >
             Cerrar sesión
           </button>

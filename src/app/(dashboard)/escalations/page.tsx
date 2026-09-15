@@ -133,7 +133,7 @@ export default function EscalationsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold mb-6">Escalaciones</h1>
+      <h1 className="text-lg font-bold mb-4 sm:text-xl sm:mb-6">Escalaciones</h1>
 
       {escalations.length === 0 ? (
         <p className="text-zinc-500 text-center py-12">
@@ -147,10 +147,10 @@ export default function EscalationsPage() {
               href={`/conversations/${esc.conversationId}`}
               className="block bg-white rounded-xl shadow-sm border border-zinc-200 p-4 hover:border-zinc-400 transition-colors"
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm text-zinc-900">
+              <div className="flex flex-wrap items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="font-medium text-sm text-zinc-900 break-words">
                       {esc.conversation?.customerName ??
                         esc.conversation?.customerIdentifier ??
                         esc.customerPhone}
@@ -162,15 +162,15 @@ export default function EscalationsPage() {
                     </span>
                   </div>
                   {esc.conversation?.customerName && (
-                    <p className="text-xs text-zinc-400">
+                    <p className="text-xs text-zinc-400 break-words">
                       {esc.conversation.customerIdentifier}
                     </p>
                   )}
-                  <p className="text-sm text-zinc-600 mt-1 line-clamp-2">
+                  <p className="text-sm text-zinc-600 mt-1 line-clamp-2 break-words">
                     {esc.reason}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex shrink-0 flex-wrap items-center gap-2 ml-auto">
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                       esc.urgency === "high"

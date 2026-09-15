@@ -55,12 +55,12 @@ export default function CvVacantes() {
 
   return (
     <div>
-      <div className="mb-2 flex flex-wrap items-center gap-2">
-        <h1 className="mr-2 text-lg font-bold">Vacantes</h1>
+      <div className="mb-2 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+        <h1 className="col-span-2 text-lg font-bold sm:col-auto sm:mr-2">Vacantes</h1>
         <select
           value={profileId}
           onChange={(e) => setProfileId(e.target.value)}
-          className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          className="w-full rounded-lg border border-zinc-300 px-2 py-2 text-base sm:w-auto sm:py-1.5 sm:text-sm"
           title="Ver solo las vacantes evaluadas por un perfil"
         >
           <option value="">Todos los perfiles</option>
@@ -74,7 +74,7 @@ export default function CvVacantes() {
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          className="w-full rounded-lg border border-zinc-300 px-2 py-2 text-base sm:w-auto sm:py-1.5 sm:text-sm"
         >
           {STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -85,7 +85,7 @@ export default function CvVacantes() {
         <select
           value={modality}
           onChange={(e) => setModality(e.target.value)}
-          className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          className="w-full rounded-lg border border-zinc-300 px-2 py-2 text-base sm:w-auto sm:py-1.5 sm:text-sm"
           title="Modalidad de la vacante: remota, híbrida o presencial"
         >
           <option value="">Toda modalidad</option>
@@ -98,7 +98,7 @@ export default function CvVacantes() {
         <select
           value={seniority}
           onChange={(e) => setSeniority(e.target.value)}
-          className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          className="w-full rounded-lg border border-zinc-300 px-2 py-2 text-base sm:w-auto sm:py-1.5 sm:text-sm"
           title="Seniority pedido por la vacante"
         >
           <option value="">Todo seniority</option>
@@ -113,16 +113,16 @@ export default function CvVacantes() {
           onChange={(e) => setLocation(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && reload()}
           placeholder="Ubicación…"
-          className="w-36 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-36 sm:py-1.5 sm:text-sm"
         />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && reload()}
           placeholder="Buscar…"
-          className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-48 sm:py-1.5 sm:text-sm"
         />
-        <span className="text-xs text-zinc-500">{data?.total ?? 0} resultados</span>
+        <span className="col-span-2 text-xs text-zinc-500 sm:col-auto">{data?.total ?? 0} resultados</span>
       </div>
 
       {selectedProfile && (
@@ -132,10 +132,11 @@ export default function CvVacantes() {
         </p>
       )}
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <label className="flex items-center gap-2 text-sm text-zinc-600">
           <input
             type="checkbox"
+            className="h-5 w-5"
             checked={onlyGoodMatch}
             onChange={(e) => setOnlyGoodMatch(e.target.checked)}
           />
@@ -148,7 +149,7 @@ export default function CvVacantes() {
               value={minScore}
               onChange={(e) => setMinScore(e.target.value)}
               inputMode="numeric"
-              className="w-14 rounded-lg border border-zinc-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-16 rounded-lg border border-zinc-300 px-2 py-2 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-14 sm:py-1 sm:text-sm"
             />
             %
           </label>
@@ -168,7 +169,7 @@ export default function CvVacantes() {
         {(data?.rows ?? []).map((v) => (
           <div
             key={v.id}
-            className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm hover:border-emerald-400"
+            className="flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-3 shadow-sm hover:border-emerald-400 sm:px-4"
           >
             <Link
               href={`/cv/vacantes/${v.id}${profileId ? `?profileId=${profileId}` : ""}`}
@@ -210,7 +211,7 @@ export default function CvVacantes() {
                 )}
               </div>
               <StatusBadge status={v.status} />
-              <div className="w-10 text-right">
+              <div className="w-10 shrink-0 text-right">
                 <Score score={v.matchScore} />
               </div>
             </Link>
@@ -226,7 +227,7 @@ export default function CvVacantes() {
                 target="_blank"
                 rel="noreferrer"
                 title={v.applyUrl ?? v.url}
-                className="shrink-0 rounded-lg border border-emerald-300 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                className="w-full shrink-0 rounded-lg border border-emerald-300 px-3 py-2 text-center text-xs font-semibold text-emerald-700 hover:bg-emerald-50 sm:w-auto"
               >
                 Aplicar ↗
               </a>

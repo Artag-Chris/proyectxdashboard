@@ -32,7 +32,7 @@ export default function CvNotificaciones() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-lg font-bold">Notificaciones</h1>
         <span className="text-xs text-zinc-500">Se actualizan cada 8 s</span>
       </div>
@@ -40,22 +40,22 @@ export default function CvNotificaciones() {
         {(data ?? []).map((n) => (
           <div
             key={n.id}
-            className={`flex items-start justify-between gap-3 rounded-xl border p-3 shadow-sm ${
+            className={`flex flex-wrap items-start gap-2 rounded-xl border p-3 shadow-sm ${
               typeBorder(n.type)
             } ${n.readAt ? "opacity-60" : ""}`}
           >
-            <div className="min-w-0">
-              <div className="text-sm font-semibold">{n.title}</div>
-              <div className="mt-0.5 text-sm text-zinc-600">{n.body}</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold break-words">{n.title}</div>
+              <div className="mt-0.5 text-sm text-zinc-600 break-words">{n.body}</div>
               <div className="mt-1 text-xs text-zinc-400">
                 {new Date(n.createdAt).toLocaleString("es-CO")}
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
               {n.payload.vacancyId && (
                 <Link
                   href={`/cv/vacantes/${n.payload.vacancyId}`}
-                  className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-700"
+                  className="flex-1 rounded-lg bg-zinc-900 px-3 py-2.5 text-center text-xs font-semibold text-white hover:bg-zinc-700 sm:flex-none sm:py-1.5"
                 >
                   Ver
                 </Link>
@@ -63,7 +63,7 @@ export default function CvNotificaciones() {
               {!n.readAt && (
                 <button
                   onClick={() => void markRead(n.id)}
-                  className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs text-zinc-500 hover:bg-white"
+                  className="flex-1 rounded-lg border border-zinc-300 px-3 py-2.5 text-xs text-zinc-500 hover:bg-white sm:flex-none sm:py-1.5"
                 >
                   Marcar leída
                 </button>

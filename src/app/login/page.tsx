@@ -34,8 +34,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex h-full items-center justify-center">
-      <div className="w-full max-w-sm mx-4">
+    <div className="flex min-h-dvh items-center justify-center px-4 py-10">
+      <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-center mb-8">Atiende Dashboard</h1>
         <form
           onSubmit={handleSubmit}
@@ -51,7 +51,7 @@ export default function LoginPage() {
               type="email"
               required
               autoComplete="email"
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+              className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
             />
           </div>
           <div>
@@ -64,7 +64,7 @@ export default function LoginPage() {
               type="password"
               required
               autoComplete="current-password"
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+              className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
             />
           </div>
           {error && (
@@ -73,7 +73,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2 rounded-lg bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-50 transition-colors"
+            className="w-full py-3 rounded-lg bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-50 transition-colors"
           >
             {isLoading ? "Ingresando..." : "Iniciar sesi\u00f3n"}
           </button>

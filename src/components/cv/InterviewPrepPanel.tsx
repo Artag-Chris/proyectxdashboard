@@ -49,7 +49,7 @@ function Section({
         className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
       >
         <span className="text-sm font-semibold text-zinc-700">{title}</span>
-        <span className="flex items-center gap-2">
+        <span className="flex flex-wrap items-center gap-2">
           {hint && <span className="text-xs text-zinc-400">{hint}</span>}
           <span className="text-xs text-zinc-400">{open ? "▲" : "▼"}</span>
         </span>
@@ -230,7 +230,7 @@ export function InterviewPrepPanel({
         <button
           onClick={() => void generate(false)}
           disabled={busy || generating}
-          className="mt-3 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+          className="mt-3 rounded-lg bg-emerald-600 px-3 py-2.5 sm:py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
         >
           {generating ? "Generando…" : "Prepararme para la entrevista"}
         </button>
@@ -261,14 +261,14 @@ export function InterviewPrepPanel({
             {company ? ` — ${company}` : ""}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-zinc-400">
             {saving ? "Guardando…" : dirty ? "Cambios sin guardar" : "Guardado"}
           </span>
           <button
             onClick={() => void generate(true)}
             disabled={busy || generating}
-            className="rounded-lg border border-emerald-300 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+            className="rounded-lg border border-emerald-300 px-3 py-2.5 sm:py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
           >
             {generating ? "Generando…" : "Regenerar plan"}
           </button>
@@ -283,7 +283,7 @@ export function InterviewPrepPanel({
           value={content.summary ?? ""}
           onChange={(e) => update((d) => ({ ...d, summary: e.target.value }))}
           rows={3}
-          className="w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-2 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:py-1.5 sm:text-sm"
         />
         <ListBlock title="Qué priorizar" items={content.focusAreas} />
       </Section>
@@ -298,7 +298,7 @@ export function InterviewPrepPanel({
                   type="checkbox"
                   checked={topic.done === true}
                   onChange={(e) => patchItem("studyPlan", i, { done: e.target.checked })}
-                  className="mt-0.5 h-4 w-4"
+                  className="mt-0.5 h-5 w-5"
                 />
                 <span
                   className={`text-sm font-medium ${
@@ -321,7 +321,7 @@ export function InterviewPrepPanel({
                 onChange={(e) => patchItem("studyPlan", i, { practice: e.target.value })}
                 rows={2}
                 placeholder="Práctica / notas"
-                className="mt-2 ml-6 w-[calc(100%-1.5rem)] rounded-lg border border-zinc-200 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="mt-2 ml-6 w-[calc(100%-1.5rem)] rounded-lg border border-zinc-200 px-2 py-2.5 sm:py-1.5 text-base sm:text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
           ))}
@@ -345,7 +345,7 @@ export function InterviewPrepPanel({
                 onChange={(e) => patchItem("likelyQuestions", i, { answerOutline: e.target.value })}
                 rows={2}
                 placeholder="Cómo estructurar tu respuesta"
-                className="mt-2 w-full rounded-lg border border-zinc-200 px-2 py-1.5 text-xs text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="mt-2 w-full rounded-lg border border-zinc-200 px-2 py-2.5 sm:py-1.5 text-base sm:text-xs text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
           ))}
@@ -367,7 +367,7 @@ export function InterviewPrepPanel({
                 onChange={(e) => patchItem("trickyQuestions", i, { howToAnswer: e.target.value })}
                 rows={2}
                 placeholder="Cómo responderla"
-                className="mt-2 w-full rounded-lg border border-amber-200 px-2 py-1.5 text-xs text-zinc-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className="mt-2 w-full rounded-lg border border-amber-200 px-2 py-2.5 sm:py-1.5 text-base sm:text-xs text-zinc-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
               />
             </div>
           ))}
@@ -392,7 +392,7 @@ export function InterviewPrepPanel({
                 type="checkbox"
                 checked={item.done}
                 onChange={(e) => patchItem("checklist", i, { done: e.target.checked })}
-                className="mt-0.5 h-4 w-4"
+                className="mt-0.5 h-5 w-5"
               />
               <span
                 className={`text-sm ${item.done ? "text-zinc-400 line-through" : "text-zinc-600"}`}

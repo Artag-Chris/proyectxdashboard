@@ -16,7 +16,7 @@ interface EditorProps {
 }
 
 const INPUT =
-  "w-full rounded-lg border border-zinc-300 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500";
+  "w-full rounded-lg border border-zinc-300 px-2.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:py-1.5 sm:text-sm";
 const LABEL = "block text-[11px] font-semibold uppercase tracking-wide text-zinc-400";
 
 /** Botones para reordenar/quitar un bloque dentro de una lista. */
@@ -32,7 +32,7 @@ function RowActions({
   onRemove: (index: number) => void;
 }) {
   const btn =
-    "rounded border border-zinc-300 px-1.5 py-0.5 text-xs text-zinc-500 hover:bg-zinc-100 disabled:opacity-30";
+    "flex h-8 w-8 shrink-0 items-center justify-center rounded border border-zinc-300 text-sm text-zinc-500 hover:bg-zinc-100 disabled:opacity-30";
   return (
     <div className="flex shrink-0 gap-1">
       <button
@@ -55,7 +55,7 @@ function RowActions({
       </button>
       <button
         type="button"
-        className="rounded border border-red-200 px-1.5 py-0.5 text-xs text-red-500 hover:bg-red-50"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-red-200 text-sm text-red-500 hover:bg-red-50"
         title="Quitar"
         onClick={() => onRemove(index)}
       >
@@ -108,7 +108,7 @@ function StringList({
       <button
         type="button"
         onClick={() => onChange([...items, ""])}
-        className="self-start rounded-lg border border-dashed border-emerald-400 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+        className="self-start rounded-lg border border-dashed border-emerald-400 px-3 py-2 text-xs sm:py-1 font-medium text-emerald-700 hover:bg-emerald-50"
       >
         + Agregar
       </button>
@@ -189,7 +189,7 @@ export function ResumeEditor({ content, onChange, onRefine, busy }: EditorProps)
             type="button"
             disabled={busy || !instruction.trim()}
             onClick={() => void onRefine(instruction)}
-            className="shrink-0 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 sm:py-1.5"
           >
             Organizar
           </button>
@@ -210,7 +210,7 @@ export function ResumeEditor({ content, onChange, onRefine, busy }: EditorProps)
                 setInstruction(chip);
                 void onRefine(chip);
               }}
-              className="rounded-full border border-emerald-300 bg-white px-2.5 py-1 text-xs text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+              className="rounded-full border border-emerald-300 bg-white px-3 py-2 text-xs sm:py-1 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
             >
               {chip}
             </button>
@@ -296,7 +296,7 @@ export function ResumeEditor({ content, onChange, onRefine, busy }: EditorProps)
         <button
           type="button"
           onClick={() => patch({ experience: [...experience, { role: "", company: "", period: "", bullets: [] }] })}
-          className="rounded-lg border border-dashed border-emerald-400 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+          className="rounded-lg border border-dashed border-emerald-400 px-3 py-2 text-xs sm:py-1 font-medium text-emerald-700 hover:bg-emerald-50"
         >
           + Agregar experiencia
         </button>
@@ -337,7 +337,7 @@ export function ResumeEditor({ content, onChange, onRefine, busy }: EditorProps)
         <button
           type="button"
           onClick={() => patch({ projects: [...projects, { name: "", highlights: [] }] })}
-          className="rounded-lg border border-dashed border-emerald-400 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+          className="rounded-lg border border-dashed border-emerald-400 px-3 py-2 text-xs sm:py-1 font-medium text-emerald-700 hover:bg-emerald-50"
         >
           + Agregar proyecto
         </button>
@@ -403,7 +403,7 @@ export function ResumeEditor({ content, onChange, onRefine, busy }: EditorProps)
           onClick={() =>
             patch({ education: [...education, { institution: "", degree: "", period: "" }] })
           }
-          className="rounded-lg border border-dashed border-emerald-400 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+          className="rounded-lg border border-dashed border-emerald-400 px-3 py-2 text-xs sm:py-1 font-medium text-emerald-700 hover:bg-emerald-50"
         >
           + Agregar formación
         </button>

@@ -101,7 +101,7 @@ export default function PendientesPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold mb-6">Pendientes</h1>
+      <h1 className="text-lg font-bold mb-4 sm:text-xl sm:mb-6">Pendientes</h1>
 
       {items.length === 0 ? (
         <p className="text-zinc-500 text-center py-12">No hay conversaciones pendientes</p>
@@ -113,9 +113,9 @@ export default function PendientesPage() {
               href={`/conversations/${item.id}`}
               className="block bg-white rounded-xl shadow-sm border border-zinc-200 p-4 hover:border-zinc-400 transition-colors"
             >
-              <div className="flex items-start justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <p className="font-medium text-sm text-zinc-900 truncate">
                       {displayName(item)}
                     </p>
@@ -129,12 +129,12 @@ export default function PendientesPage() {
                     </span>
                   </div>
                   {item.lastMessageText && (
-                    <p className="text-sm text-zinc-600 mt-1 line-clamp-2">
+                    <p className="text-sm text-zinc-600 mt-1 line-clamp-2 break-words">
                       {item.lastMessageText}
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0 ml-3">
+                <div className="flex shrink-0 flex-wrap items-center gap-2 ml-auto">
                   <span className="text-xs text-zinc-400">{formatDate(item.lastMessageAt)}</span>
                   {item.unreadCount > 0 && (
                     <span className="min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-medium">

@@ -94,7 +94,7 @@ export function AtsPanel({
             Mide lo que un ATS puede leer: palabras clave, estructura, contacto y formato.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {loading && <span className="text-xs text-zinc-400">Analizando…</span>}
           {grade && analysis && (
             <div className={`rounded-xl border px-3 py-2 text-center ${grade.box}`}>
@@ -112,7 +112,7 @@ export function AtsPanel({
           checked={atsMode}
           onChange={toggleMode}
           disabled={busy}
-          className="mt-0.5 h-4 w-4"
+          className="mt-0.5 h-5 w-5"
         />
         <span>
           <span className="block text-sm font-medium text-zinc-700">Modo ATS</span>
@@ -129,7 +129,7 @@ export function AtsPanel({
           type="button"
           onClick={() => void onDownload()}
           disabled={busy || !atsMode}
-          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+          className="rounded-lg bg-emerald-600 px-3 py-2.5 sm:py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
         >
           Descargar en Modo ATS
         </button>
@@ -154,7 +154,7 @@ export function AtsPanel({
             type="button"
             onClick={() => void onSave()}
             disabled={busy}
-            className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
+            className="rounded-lg bg-amber-600 px-3 py-2.5 sm:py-1.5 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
           >
             Guardar cambios
           </button>
@@ -196,7 +196,7 @@ export function AtsPanel({
                   type="button"
                   onClick={() => void fixKeywords()}
                   disabled={busy || fixing}
-                  className="rounded-lg border border-emerald-500 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                  className="rounded-lg border border-emerald-500 px-3 py-2.5 sm:py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
                 >
                   {fixing ? "Acomodando…" : "Acomodarlas con IA"}
                 </button>

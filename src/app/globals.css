@@ -3,3 +3,22 @@
 @theme inline {
   --font-sans: var(--font-geist);
 }
+
+/* Notch / home-indicator. Requiere viewportFit: "cover" en el viewport export. */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    overscroll-behavior-y: none;
+  }
+}

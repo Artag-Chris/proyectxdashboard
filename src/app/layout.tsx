@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
@@ -11,6 +11,14 @@ const geist = Geist({
 export const metadata: Metadata = {
   title: "Atiende Dashboard",
   description: "Dashboard de administración para Atiende",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#fafafa",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

@@ -35,8 +35,8 @@ export default function EmailsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-xl font-bold mb-1">Enviar email</h1>
+    <div className="max-w-2xl sm:mx-auto">
+      <h1 className="text-lg font-bold mb-1 sm:text-xl">Enviar email</h1>
       <p className="text-sm text-zinc-500 mb-6">
         Solo los usuarios autenticados (ADMIN/SUPER_ADMIN) pueden enviar emails desde
         este panel. El agente de chat nunca envía emails por su cuenta.
@@ -55,7 +55,7 @@ export default function EmailsPage() {
             placeholder="cliente@mail.com"
             required
             maxLength={200}
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
+            className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 text-base focus:outline-none focus:ring-2 focus:ring-zinc-900 sm:text-sm"
           />
         </div>
 
@@ -68,7 +68,7 @@ export default function EmailsPage() {
             placeholder="Asunto del email"
             required
             maxLength={200}
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
+            className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 text-base focus:outline-none focus:ring-2 focus:ring-zinc-900 sm:text-sm"
           />
         </div>
 
@@ -81,7 +81,7 @@ export default function EmailsPage() {
             required
             maxLength={10000}
             placeholder="Escribe el contenido del email..."
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 resize-y"
+            className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 text-base focus:outline-none focus:ring-2 focus:ring-zinc-900 resize-y sm:text-sm"
           />
         </div>
 
@@ -89,7 +89,7 @@ export default function EmailsPage() {
           <button
             type="submit"
             disabled={sending || !to || !subject || !text}
-            className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-sm hover:bg-zinc-700 disabled:opacity-50 transition-colors"
+            className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 text-white text-sm hover:bg-zinc-700 disabled:opacity-50 transition-colors sm:w-auto"
           >
             {sending ? "Enviando..." : "Enviar email"}
           </button>

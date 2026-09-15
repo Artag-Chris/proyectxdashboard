@@ -144,12 +144,12 @@ export default function CvVacanteDetalle() {
       <Link href="/cv/vacantes" className="text-sm text-zinc-500 hover:text-zinc-700">
         ← Vacantes
       </Link>
-      <div className="mt-2 flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-bold">{vac.title}</h1>
+      <div className="mt-2 flex flex-wrap items-center gap-2 sm:gap-3">
+        <h1 className="text-lg font-bold break-words sm:text-xl">{vac.title}</h1>
         <StatusBadge status={shownStatus} />
         <Score score={vac.matchScore} />
       </div>
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-zinc-500 break-words">
         {[vac.company, vac.location, vac.salary, vac.modality].filter(Boolean).join(" · ") || "—"}
         <span className="ml-2 text-zinc-400">· {vac.source.name}</span>
         {vac.isManual && (
@@ -168,7 +168,7 @@ export default function CvVacanteDetalle() {
               <button
                 key={p.profileId}
                 onClick={() => selectProfile(p.profileId)}
-                className={`rounded-lg border px-2 py-1 text-xs ${
+                className={`rounded-lg border px-3 py-2 text-xs ${
                   active
                     ? "border-emerald-600 bg-emerald-600 text-white"
                     : "border-zinc-300 text-zinc-600 hover:bg-zinc-100"
@@ -203,12 +203,12 @@ export default function CvVacanteDetalle() {
             href={applyUrl}
             target="_blank"
             rel="noreferrer"
-            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500"
+            className="w-[calc(50%-0.25rem)] rounded-lg bg-emerald-600 px-3 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-500 sm:w-auto"
           >
             Aplicar ↗
           </a>
         ) : (
-          <span className="rounded-lg border border-dashed border-zinc-300 px-3 py-1.5 text-sm text-zinc-400">
+          <span className="w-full rounded-lg border border-dashed border-zinc-300 px-3 py-2.5 text-center text-sm text-zinc-400 sm:w-auto">
             Sin URL de aplicación (oferta pegada a mano)
           </span>
         )}
@@ -217,7 +217,7 @@ export default function CvVacanteDetalle() {
             onClick={() => void generateResume({ regenerate: true })}
             disabled={busy}
             title="Vuelve a redactar la HV con el perfil actual (pisa el texto del CV; la carta se conserva)"
-            className="rounded-lg border border-emerald-300 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+            className="w-[calc(50%-0.25rem)] rounded-lg border border-emerald-300 px-3 py-2.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 sm:w-auto"
           >
             Regenerar HV
           </button>
@@ -225,7 +225,7 @@ export default function CvVacanteDetalle() {
         {shownStatus !== "APPLIED" && (
           <button
             onClick={() => void setStatus("APPLIED")}
-            className="rounded-lg border border-violet-300 px-3 py-1.5 text-sm hover:bg-violet-50"
+            className="w-[calc(50%-0.25rem)] rounded-lg border border-violet-300 px-3 py-2.5 text-sm hover:bg-violet-50 sm:w-auto"
           >
             Marcar aplicada
             {scopedProfile ? ` (${scopedProfile.profileName})` : ""}
@@ -234,7 +234,7 @@ export default function CvVacanteDetalle() {
         {shownStatus !== "IGNORED" && (
           <button
             onClick={() => void setStatus("IGNORED")}
-            className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-500 hover:bg-zinc-50"
+            className="w-[calc(50%-0.25rem)] rounded-lg border border-zinc-300 px-3 py-2.5 text-sm text-zinc-500 hover:bg-zinc-50 sm:w-auto"
           >
             Ignorar
             {scopedProfile ? ` (${scopedProfile.profileName})` : ""}
@@ -244,7 +244,7 @@ export default function CvVacanteDetalle() {
           <button
             onClick={() => setPrepOpen(!showPrep)}
             title="Plan de estudio y preguntas para preparar la entrevista de esta vacante"
-            className={`rounded-lg border px-3 py-1.5 text-sm ${
+            className={`w-[calc(50%-0.25rem)] rounded-lg border px-3 py-2.5 text-sm sm:w-auto ${
               showPrep
                 ? "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-500"
                 : "border-emerald-300 font-medium text-emerald-700 hover:bg-emerald-50"
@@ -281,13 +281,13 @@ export default function CvVacanteDetalle() {
                   href={applyUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg border border-emerald-300 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+                  className="w-full rounded-lg border border-emerald-300 px-3 py-2.5 text-center text-sm font-medium text-emerald-700 hover:bg-emerald-50 sm:w-auto"
                 >
                   Abrir el aviso ↗
                 </a>
                 <button
                   onClick={() => void copyApplyUrl()}
-                  className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50"
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm text-zinc-600 hover:bg-zinc-50 sm:w-auto"
                 >
                   {copied ? "¡Copiada!" : "Copiar URL"}
                 </button>
@@ -379,7 +379,7 @@ export default function CvVacanteDetalle() {
               <button
                 onClick={() => void generateResume()}
                 disabled={busy}
-                className="mt-3 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                className="mt-3 w-full rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 sm:w-auto"
               >
                 Generar la hoja de vida
               </button>

@@ -358,7 +358,7 @@ export default function CvPerfiles() {
           </ul>
           <button
             onClick={reload}
-            className="mt-3 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-amber-500"
+            className="mt-3 rounded-lg bg-amber-600 px-3 py-2.5 sm:py-1.5 text-sm font-semibold text-white hover:bg-amber-500"
           >
             Reintentar
           </button>
@@ -380,7 +380,7 @@ export default function CvPerfiles() {
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="Nombre y apellido *"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:py-1.5 sm:text-sm"
         />
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <input
@@ -388,13 +388,13 @@ export default function CvPerfiles() {
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             placeholder="Email (opcional)"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:py-1.5 sm:text-sm"
           />
           <input
             value={newHeadline}
             onChange={(e) => setNewHeadline(e.target.value)}
             placeholder="Titular (ej. Backend Engineer)"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:py-1.5 sm:text-sm"
           />
         </div>
         <textarea
@@ -407,7 +407,7 @@ export default function CvPerfiles() {
         <div className="flex gap-2">
           <button
             disabled={!newName.trim() || busy}
-            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+            className="rounded-lg bg-emerald-600 px-3 py-2.5 sm:py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
           >
             Crear perfil
           </button>
@@ -418,7 +418,7 @@ export default function CvPerfiles() {
                 setShowNew(false);
                 setMsg("");
               }}
-              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
+              className="rounded-lg border border-zinc-300 px-3 py-2.5 sm:py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
             >
               Cancelar
             </button>
@@ -456,7 +456,7 @@ export default function CvPerfiles() {
               setSelected(p.id);
               setMsg("");
             }}
-            className={`rounded-lg border px-3 py-1.5 text-sm ${
+            className={`rounded-lg border px-3 py-2.5 sm:py-1.5 text-sm ${
               profile?.id === p.id
                 ? "border-emerald-600 bg-emerald-600 text-white"
                 : "border-zinc-300 text-zinc-600 hover:bg-zinc-100"
@@ -471,7 +471,7 @@ export default function CvPerfiles() {
             setShowNew((v) => !v);
             setMsg("");
           }}
-          className="rounded-lg border border-dashed border-emerald-500 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+          className="rounded-lg border border-dashed border-emerald-500 px-3 py-2.5 sm:py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
         >
           + Nuevo perfil
         </button>
@@ -498,18 +498,18 @@ export default function CvPerfiles() {
                     {detail?.summary ? ` · ${detail.summary.slice(0, 90)}…` : ""}
                   </p>
                 </div>
-                <div className="flex shrink-0 gap-1">
+                <div className="flex shrink-0 flex-wrap gap-1.5">
                   <button
                     onClick={openEdit}
                     disabled={busy}
-                    className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
+                    className="rounded-lg border border-zinc-300 px-3 py-2.5 sm:py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
                   >
                     Editar datos
                   </button>
                   <button
                     onClick={() => void runBackfill()}
                     disabled={busy}
-                    className="rounded-lg border border-emerald-500 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                    className="rounded-lg border border-emerald-500 px-3 py-2.5 sm:py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
                   >
                     Re-evaluar vacantes
                   </button>
@@ -521,7 +521,7 @@ export default function CvPerfiles() {
                         ? "Es el único perfil: creá otro antes de borrarlo"
                         : "Borrar este perfil y todos sus datos"
                     }
-                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
+                    className="rounded-lg border border-red-200 px-3 py-2.5 sm:py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
                   >
                     Borrar
                   </button>
@@ -539,7 +539,7 @@ export default function CvPerfiles() {
                     value={detail?.applyLanguage ?? "auto"}
                     onChange={(e) => void saveLanguage(e.target.value)}
                     disabled={busy}
-                    className="rounded-lg border border-zinc-300 px-2 py-1 text-xs disabled:opacity-50"
+                    className="rounded-lg border border-zinc-300 px-2 py-2 text-base disabled:opacity-50 sm:py-1 sm:text-xs"
                     title="Idioma por defecto de las HV nuevas de este perfil."
                   >
                     {APPLY_LANGUAGE_OPTIONS.map((o) => (
@@ -560,7 +560,7 @@ export default function CvPerfiles() {
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     placeholder="Nombre y apellido *"
-                    className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:py-1.5 sm:text-sm"
                   />
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <input
@@ -568,13 +568,13 @@ export default function CvPerfiles() {
                       value={editEmail}
                       onChange={(e) => setEditEmail(e.target.value)}
                       placeholder="Email"
-                      className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:py-1.5 sm:text-sm"
                     />
                     <input
                       value={editHeadline}
                       onChange={(e) => setEditHeadline(e.target.value)}
                       placeholder="Titulares separados por coma"
-                      className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:py-1.5 sm:text-sm"
                     />
                   </div>
                   <textarea
@@ -595,14 +595,14 @@ export default function CvPerfiles() {
                   <div className="flex gap-2">
                     <button
                       disabled={busy}
-                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                      className="rounded-lg bg-emerald-600 px-3 py-2.5 sm:py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
                     >
                       Guardar cambios
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditOpen(false)}
-                      className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
+                      className="rounded-lg border border-zinc-300 px-3 py-2.5 sm:py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
                     >
                       Cancelar
                     </button>
@@ -624,7 +624,7 @@ export default function CvPerfiles() {
                     onChange={(e) =>
                       setScheduleDraft({ profileId: profile.id, hours: e.target.value })
                     }
-                    className="rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+                    className="rounded-lg border border-zinc-300 px-2 py-2.5 text-base sm:py-1.5 sm:text-sm"
                   >
                     <option value="">Desactivado</option>
                     {scheduleOptions.map((h) => (
@@ -637,7 +637,7 @@ export default function CvPerfiles() {
                 <button
                   onClick={() => void saveSchedule()}
                   disabled={busy}
-                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                  className="rounded-lg bg-emerald-600 px-3 py-2.5 sm:py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
                 >
                   Guardar cadencia
                 </button>
@@ -646,7 +646,7 @@ export default function CvPerfiles() {
                     void action("Búsqueda despachada.", () => cvApi.post(`/profiles/${profile.id}/run`))
                   }
                   disabled={busy}
-                  className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-zinc-700 disabled:opacity-50"
+                  className="rounded-lg bg-zinc-900 px-3 py-2.5 sm:py-1.5 text-sm font-semibold text-white hover:bg-zinc-700 disabled:opacity-50"
                 >
                   Buscar ahora
                 </button>
@@ -675,7 +675,7 @@ export default function CvPerfiles() {
                   return (
                     <label
                       key={s.id}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-200 px-2 py-1.5 text-sm hover:bg-zinc-50"
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-200 px-2 py-2.5 sm:py-1.5 text-sm hover:bg-zinc-50"
                     >
                       <input
                         type="checkbox"
@@ -699,11 +699,11 @@ export default function CvPerfiles() {
                   type="file"
                   accept="application/pdf"
                   onChange={(e) => setPdf(e.target.files?.[0] ?? null)}
-                  className="w-full text-sm text-zinc-500 file:mr-2 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-1.5 file:text-sm file:text-white"
+                  className="w-full text-sm text-zinc-500 file:mr-2 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-2.5 sm:py-1.5 file:text-sm file:text-white"
                 />
                 <button
                   disabled={!pdf || busy}
-                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                  className="rounded-lg bg-emerald-600 px-3 py-2.5 sm:py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
                 >
                   Indexar PDF
                 </button>
@@ -714,7 +714,7 @@ export default function CvPerfiles() {
                   value={txtName}
                   onChange={(e) => setTxtName(e.target.value)}
                   placeholder="Nombre (opcional)"
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:py-1.5 sm:text-sm"
                 />
                 <textarea
                   value={txt}
@@ -731,7 +731,7 @@ export default function CvPerfiles() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     disabled={!txt.trim() || busy}
-                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                    className="rounded-lg bg-emerald-600 px-3 py-2.5 sm:py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
                   >
                     Indexar texto (match)
                   </button>
@@ -739,7 +739,7 @@ export default function CvPerfiles() {
                     type="button"
                     onClick={() => void importResume()}
                     disabled={!txt.trim() || busy}
-                    className="rounded-lg border border-emerald-500 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                    className="rounded-lg border border-emerald-500 px-3 py-2.5 sm:py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
                   >
                     Importar al perfil (IA)
                   </button>
@@ -761,8 +761,8 @@ export default function CvPerfiles() {
                     r.active ? "border-emerald-300 bg-emerald-50" : "border-zinc-200"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
+                  <div className="flex flex-wrap items-start gap-2">
+                    <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">
                         {r.name}
                         {r.active && <span className="ml-2 text-xs text-emerald-600">● activa</span>}
@@ -771,12 +771,12 @@ export default function CvPerfiles() {
                         {r.kind} · {r.chunkCount} chunks ·{" "}
                         {new Date(r.createdAt).toLocaleDateString("es-CO")}
                       </div>
-                      {r.error && <div className="mt-1 text-xs text-red-600">{r.error}</div>}
+                      {r.error && <div className="mt-1 text-xs text-red-600 break-words">{r.error}</div>}
                     </div>
                     <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLE[r.status]}`}>
                       {r.status === "EMBEDDING" ? "Indexando…" : r.status}
                     </span>
-                    <div className="flex shrink-0 gap-1">
+                    <div className="flex shrink-0 gap-1.5">
                       {!r.active && r.status === "READY" && (
                         <button
                           onClick={() =>
@@ -784,7 +784,7 @@ export default function CvPerfiles() {
                               cvApi.post(`/resumes/${r.id}/activate`, { profileId: profile.id }),
                             )
                           }
-                          className="rounded-lg bg-emerald-600 px-2 py-1 text-xs text-white"
+                          className="rounded-lg bg-emerald-600 px-2.5 py-2 text-xs text-white sm:py-1"
                         >
                           Activar
                         </button>
@@ -795,7 +795,7 @@ export default function CvPerfiles() {
                             cvApi.del(`/resumes/${r.id}?profileId=${profile.id}`),
                           )
                         }
-                        className="rounded-lg border border-zinc-300 px-2 py-1 text-xs text-zinc-500 hover:bg-red-50"
+                        className="rounded-lg border border-zinc-300 px-2.5 py-2 text-xs text-zinc-500 hover:bg-red-50 sm:py-1"
                       >
                         Borrar
                       </button>

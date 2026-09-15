@@ -83,10 +83,10 @@ export function PdfPreviewModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-zinc-900/70 p-2 sm:p-4">
-      <div className="mx-auto flex h-full w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl bg-zinc-50 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex flex-col bg-zinc-900/70 p-0 sm:p-4">
+      <div className="mx-auto flex h-full w-full max-w-[1500px] flex-col overflow-hidden rounded-none bg-zinc-50 shadow-2xl sm:rounded-2xl">
         {/* Barra superior */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 bg-white px-3 py-2">
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-zinc-200 bg-white px-3 py-2 pt-safe">
           <div className="flex gap-1">
             {(
               [
@@ -97,7 +97,7 @@ export function PdfPreviewModal({
               <button
                 key={value}
                 onClick={() => onTab(value)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                className={`rounded-lg px-3 py-2.5 text-sm sm:py-1.5 font-medium ${
                   tab === value
                     ? "bg-emerald-600 text-white"
                     : "border border-zinc-300 text-zinc-600 hover:bg-zinc-100"
@@ -118,7 +118,7 @@ export function PdfPreviewModal({
             <button
               onClick={() => void onSave()}
               disabled={busy}
-              className="rounded-lg border border-emerald-500 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+              className="rounded-lg border border-emerald-500 px-3 py-2.5 text-sm sm:py-1.5 font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
             >
               Guardar
             </button>
@@ -130,13 +130,13 @@ export function PdfPreviewModal({
                   ? "Descarga la HV en Modo ATS: una columna y encabezados estándar"
                   : "Descarga la HV en la plantilla de dos columnas"
               }
-              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+              className="rounded-lg bg-emerald-600 px-3 py-2.5 text-sm sm:py-1.5 font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
             >
               {content.atsMode ? "Descargar PDF (ATS)" : "Descargar PDF"}
             </button>
             <button
               onClick={onClose}
-              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
+              className="rounded-lg border border-zinc-300 px-3 py-2.5 text-sm sm:py-1.5 text-zinc-600 hover:bg-zinc-100"
             >
               Cerrar
             </button>
@@ -144,8 +144,8 @@ export function PdfPreviewModal({
         </div>
 
         {/* Editor + vista previa */}
-        <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(360px,42%)_1fr]">
-          <div className="min-h-0 overflow-auto border-b border-zinc-200 bg-zinc-50 p-3 lg:border-b-0 lg:border-r">
+        <div className="grid grid-cols-1 overflow-y-auto lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(360px,42%)_1fr] lg:overflow-hidden">
+          <div className="max-h-[45dvh] min-h-0 overflow-auto border-b border-zinc-200 bg-zinc-50 p-3 lg:max-h-none lg:border-b-0 lg:border-r">
             {tab === "cv" ? (
               <ResumeEditor
                 content={content}
@@ -159,7 +159,7 @@ export function PdfPreviewModal({
                   <button
                     onClick={() => void onGenerateLetter()}
                     disabled={busy}
-                    className="rounded-lg border border-emerald-500 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                    className="w-full rounded-lg border border-emerald-500 px-3 py-2.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 sm:w-auto sm:py-1.5"
                   >
                     {content.coverLetter ? "Regenerar con IA" : "Generar carta con IA"}
                   </button>
@@ -183,7 +183,7 @@ export function PdfPreviewModal({
             )}
           </div>
 
-          <div className="min-h-0 bg-zinc-200">
+          <div className="min-h-0 h-[55dvh] shrink-0 bg-zinc-200 lg:h-auto">
             <PDFViewer width="100%" height="100%" showToolbar={false}>
               {tab === "cv" ? (
                 <ResumeDocument data={resumeData} />
