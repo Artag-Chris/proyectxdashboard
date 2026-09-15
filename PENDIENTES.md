@@ -9,6 +9,7 @@
 - [x] Botón para resolver escalación desde el detalle (`POST /api/dashboard/conversations/:id/resolve`)
 - [x] Burbuja distintiva de respuestas humanas (rol `HUMAN`)
 - [x] Polling del detalle mientras la conversación está escalada
+- [x] Explorador de chats de solo lectura (`/chats`): todas las conversaciones en cualquier estado, filtros por estado/canal/búsqueda, paginación y "cargar mensajes anteriores" en el detalle
 
 ## Prioridad media
 - [ ] Indicador de escalaciones no leídas

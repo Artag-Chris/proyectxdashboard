@@ -5,27 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { displayName, type PendingItem, type PendingResponse } from "@/components/PendingMonitor";
 import { channelBadge } from "@/lib/channel";
-
-function formatDate(iso: string | null) {
-  if (!iso) return "";
-  return new Intl.DateTimeFormat("es-CO", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(iso));
-}
-
-function statusLabel(status: string): string {
-  switch (status) {
-    case "ESCALATED":
-      return "Escalada";
-    case "RESOLVED":
-      return "Resuelta";
-    case "ABANDONED":
-      return "Abandonada";
-    default:
-      return "Activa";
-  }
-}
+import { formatDateTime, statusLabel } from "@/lib/conversation";
 
 export default function PendientesPage() {
   const [items, setItems] = useState<PendingItem[]>([]);
@@ -135,7 +115,7 @@ export default function PendientesPage() {
                   )}
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2 ml-auto">
-                  <span className="text-xs text-zinc-400">{formatDate(item.lastMessageAt)}</span>
+                  <span className="text-xs text-zinc-400">{formatDateTime(item.lastMessageAt)}</span>
                   {item.unreadCount > 0 && (
                     <span className="min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-medium">
                       {item.unreadCount > 99 ? "99+" : item.unreadCount}

@@ -39,7 +39,30 @@ type ApiResponse = {
     status: string;
   };
   messages: ApiMessage[];
+  hasMore?: boolean;
 };
+
+const MESSAGE_PAGE_SIZE = 50;
+
+function dedupeById(messages: Message[]): Message[] {
+  const seen = new Set<string>();
+  return messages.filter((message) => {
+    if (seen.has(message.id)) return false;
+    seen.add(message.id);
+    return true;
+  });
+}
+
+/** Primer ancestro con scroll vertical (el <main> del layout). */
+function getScrollParent(node: HTMLElement | null): HTMLElement | null {
+  let current = node?.parentElement ?? null;
+  while (current) {
+    const { overflowY } = getComputedStyle(current);
+    if (overflowY === "auto" || overflowY === "scroll") return current;
+    current = current.parentElement;
+  }
+  return null;
+}
 
 function extractText(content: unknown): string {
   if (typeof content === "string") return content;
@@ -83,16 +106,27 @@ export default function ConversationPage() {
   const id = params.id as string;
 
   const [conv, setConv] = useState<Conversation | null>(null);
+  const [olderMessages, setOlderMessages] = useState<Message[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [resolving, setResolving] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const firstMessageRef = useRef<HTMLDivElement>(null);
 
+  const lastMessageId = conv?.messages?.length
+    ? conv.messages[conv.messages.length - 1].id
+    : null;
+
+  // Solo baja al final cuando llega un mensaje nuevo: el polling reemplaza el
+  // array cada 10 s y no debe arrastrar la vista mientras se lee historial.
   useEffect(() => {
+    if (!lastMessageId) return;
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [conv?.messages]);
+  }, [lastMessageId]);
 
   const fetchConversation = useCallback(async () => {
     try {
@@ -107,12 +141,46 @@ export default function ConversationPage() {
         status: res.conversation.status,
         messages: res.messages,
       });
+      setHasMore(res.hasMore ?? false);
     } catch {
       setError("Error al cargar la conversaci\u00f3n");
     } finally {
       setLoading(false);
     }
   }, [id]);
+
+  /**
+   * Carga la página anterior de historial. Ancla el primer mensaje visible para
+   * que la lista no salte al insertar contenido arriba.
+   */
+  const loadOlder = useCallback(async () => {
+    if (loadingOlder) return;
+    const oldest = dedupeById([...olderMessages, ...(conv?.messages ?? [])])[0];
+    if (!oldest) return;
+
+    const container = getScrollParent(firstMessageRef.current);
+    const anchorTop = firstMessageRef.current?.getBoundingClientRect().top ?? 0;
+
+    setLoadingOlder(true);
+    try {
+      setError("");
+      const res = await api.get<ApiResponse>(
+        `/api/dashboard/conversations/${id}?before=${encodeURIComponent(oldest.createdAt)}&limit=${MESSAGE_PAGE_SIZE}`,
+      );
+      setOlderMessages((prev) => dedupeById([...(res.messages ?? []), ...prev]));
+      setHasMore(res.hasMore ?? false);
+      requestAnimationFrame(() => {
+        const anchor = firstMessageRef.current;
+        if (!container || !anchor) return;
+        const delta = anchor.getBoundingClientRect().top - anchorTop;
+        if (delta !== 0) container.scrollTop += delta;
+      });
+    } catch {
+      setError("No se pudieron cargar los mensajes anteriores.");
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [conv?.messages, id, loadingOlder, olderMessages]);
 
   const markRead = useCallback(async () => {
     try {
@@ -208,7 +276,7 @@ export default function ConversationPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-zinc-500">Cargando conversaci\u00f3n...</p>
+        <p className="text-zinc-500">Cargando conversaci&oacute;n...</p>
       </div>
     );
   }
@@ -224,12 +292,13 @@ export default function ConversationPage() {
   if (!conv) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-red-600">Conversaci\u00f3n no encontrada</p>
+        <p className="text-red-600">Conversaci&oacute;n no encontrada</p>
       </div>
     );
   }
 
   const isEscalated = conv.status === "ESCALATED";
+  const messages = dedupeById([...olderMessages, ...(conv.messages ?? [])]);
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -267,17 +336,35 @@ export default function ConversationPage() {
         <p className="text-sm text-red-600 mb-4">{error}</p>
       )}
 
-      {isEscalated && (
+      {isEscalated ? (
         <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800">
-          La IA est\u00e1 en pausa en esta conversaci\u00f3n. Puedes responderle
-          directamente al cliente desde aqu\u00ed.
+          La IA est&aacute; en pausa en esta conversaci&oacute;n. Puedes responderle
+          directamente al cliente desde aqu&iacute;.
+        </div>
+      ) : (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-zinc-50 border border-zinc-200 text-sm text-zinc-600">
+          Solo lectura &mdash; la IA est&aacute; atendiendo esta conversaci&oacute;n.
+        </div>
+      )}
+
+      {hasMore && (
+        <div className="mb-3 flex justify-center">
+          <button
+            type="button"
+            onClick={loadOlder}
+            disabled={loadingOlder}
+            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
+          >
+            {loadingOlder ? "Cargando..." : "Cargar mensajes anteriores"}
+          </button>
         </div>
       )}
 
       <div className="space-y-3">
-        {(conv.messages ?? []).map((msg) => (
+        {messages.map((msg, index) => (
           <div
             key={msg.id}
+            ref={index === 0 ? firstMessageRef : undefined}
             className={`flex min-w-0 ${msg.role === "USER" ? "justify-start" : "justify-end"}`}
           >
             <div
