@@ -138,6 +138,10 @@ export interface VacancyRow {
   source: { id: string; name: string };
   match: { id: string; score: number; verdict: string } | null;
   profiles: VacancyProfileInfo[];
+  /** Aviso marcado como duplicado de otro (oculto por defecto en el listado). */
+  isDuplicate?: boolean;
+  duplicateOf?: { id: string; title: string; company: string | null } | null;
+  duplicateCount?: number;
   /** Oferta pegada a mano (fuente sintética MANUAL), no scrapeada. */
   isManual?: boolean;
 }
@@ -184,6 +188,19 @@ export interface VacancyDetail {
   interview: InterviewPrep | null;
   /** Una entrada por perfil que evaluó la vacante (match y HV propios). */
   profiles: VacancyDetailProfile[];
+  /** Aviso canónico del que este es duplicado (si lo es). */
+  duplicateOf?: { id: string; title: string; company: string | null; url: string } | null;
+  /** Avisos marcados como duplicados de este. */
+  duplicates?: {
+    id: string;
+    title: string;
+    company: string | null;
+    url: string;
+    status: string;
+  }[];
+  isDuplicate?: boolean;
+  dupDismissed?: boolean;
+  duplicateCount?: number;
   /** Oferta pegada a mano (fuente sintética MANUAL), no scrapeada. */
   isManual?: boolean;
 }
@@ -391,4 +408,10 @@ export interface NotificationRow {
   payload: { vacancyId?: string };
   readAt: string | null;
   createdAt: string;
+}
+
+/** Flags de configuración que expone el API (GET /config). */
+export interface AppConfig {
+  autoResumeEnabled: boolean;
+  dedupEnabled: boolean;
 }

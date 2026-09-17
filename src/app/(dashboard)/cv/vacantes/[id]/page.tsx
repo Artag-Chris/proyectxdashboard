@@ -103,6 +103,21 @@ export default function CvVacanteDetalle() {
     await load();
   }
 
+  /** «No es duplicado»: el detector se equivocó (se desmarca y se reprocesa). */
+  async function markNotDuplicate() {
+    if (!vac) return;
+    setBusy(true);
+    setError("");
+    try {
+      await cvApi.post(`/vacancies/${vac.id}/not-duplicate`);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   /**
    * Genera —o REGENERA— la HV con el perfil actual. Regenerar pisa el texto del
    * CV (la carta se conserva), así que es una acción explícita y confirmada.
@@ -158,6 +173,57 @@ export default function CvVacanteDetalle() {
           </span>
         )}
       </p>
+
+      {/*
+        Dedup: la fila no se borra, se marca. Acá se explica el parentesco y se
+        deja deshacer si el detector se equivocó.
+      */}
+      {vac.isDuplicate && vac.duplicateOf && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <p className="text-sm text-amber-800">
+            Posible duplicado de <b>{vac.duplicateOf.title}</b>
+            {vac.duplicateOf.company ? ` — ${vac.duplicateOf.company}` : ""}. Por eso está oculto en
+            la lista.
+          </p>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/cv/vacantes/${vac.duplicateOf.id}`}
+              className="text-xs text-amber-800 underline hover:text-amber-900"
+            >
+              Ver el original
+            </Link>
+            <button
+              onClick={() => void markNotDuplicate()}
+              disabled={busy}
+              className="rounded-lg border border-amber-400 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+            >
+              No es duplicado
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!vac.isDuplicate && vac.duplicates && vac.duplicates.length > 0 && (
+        <div className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+          <p className="text-xs text-zinc-500">
+            {vac.duplicates.length} aviso(s) marcado(s) como duplicado de este (ocultos en la
+            lista):
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {vac.duplicates.map((d) => (
+              <li key={d.id}>
+                <Link
+                  href={`/cv/vacantes/${d.id}`}
+                  className="text-xs text-zinc-600 underline hover:text-zinc-800"
+                >
+                  {d.title}
+                </Link>
+                {d.company ? ` — ${d.company}` : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {vac.profiles.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -373,8 +439,8 @@ export default function CvVacanteDetalle() {
             <Card>
               <h2 className="text-sm font-semibold text-emerald-700">Sin hoja de vida todavía</h2>
               <p className="mt-2 text-sm text-zinc-500">
-                El pipeline solo genera la HV cuando el match supera el umbral. Si querés postular
-                igual, generala a pedido.
+                Generala a pedido cuando quieras: sale redactada con este perfil y su análisis de
+                encaje. La carta de presentación se crea junto con ella.
               </p>
               <button
                 onClick={() => void generateResume()}

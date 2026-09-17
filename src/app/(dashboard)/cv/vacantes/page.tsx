@@ -33,6 +33,8 @@ export default function CvVacantes() {
   const [location, setLocation] = useState("");
   const [onlyGoodMatch, setOnlyGoodMatch] = useState(true);
   const [minScore, setMinScore] = useState(String(DEFAULT_MIN_SCORE));
+  // Los duplicados se ocultan por defecto (se marcan, no se borran).
+  const [showDuplicates, setShowDuplicates] = useState(false);
 
   const { data: profiles } = usePoll<ProfileRow[]>(() => cvApi.get("/profiles"), 30000);
 
@@ -44,11 +46,12 @@ export default function CvVacantes() {
   if (seniority) params.set("seniority", seniority);
   if (location.trim()) params.set("location", location.trim());
   if (effectiveMin !== null) params.set("minScore", String(effectiveMin));
+  if (showDuplicates) params.set("duplicates", "all");
 
   const { data, error, reload } = usePoll<ListResponse>(
     () => cvApi.get(`/vacancies?${params.toString()}`),
     15000,
-    [status, q, profileId, modality, seniority, location, onlyGoodMatch, minScore],
+    [status, q, profileId, modality, seniority, location, onlyGoodMatch, minScore, showDuplicates],
   );
 
   const selectedProfile = (profiles ?? []).find((p) => p.id === profileId) ?? null;
@@ -154,6 +157,14 @@ export default function CvVacantes() {
             %
           </label>
         )}
+        <label className="flex items-center gap-2 text-sm text-zinc-600">
+          <input
+            type="checkbox"
+            checked={showDuplicates}
+            onChange={(e) => setShowDuplicates(e.target.checked)}
+          />
+          Ver duplicados
+        </label>
         <span className="text-xs text-zinc-400">
           {onlyGoodMatch
             ? selectedProfile
@@ -183,6 +194,18 @@ export default function CvVacantes() {
                   {v.isManual && (
                     <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
                       Manual
+                    </span>
+                  )}
+                  {v.isDuplicate && (
+                    <span
+                      title={
+                        v.duplicateOf
+                          ? `Duplicado de: ${v.duplicateOf.title}`
+                          : "Marcado como duplicado de otro aviso"
+                      }
+                      className="ml-2 rounded-full bg-zinc-200 px-2 py-0.5 text-xs text-zinc-600"
+                    >
+                      Duplicado
                     </span>
                   )}
                 </div>
@@ -221,6 +244,19 @@ export default function CvVacantes() {
               el href relativo) y en los agregadores su enlace de redirección
               (se resuelve en el navegador, no en el servidor).
             */}
+            {/*
+              Link al aviso canónico: va FUERA del Link de la fila para no anidar
+              anclas (mismo motivo por el que «Aplicar ↗» vive acá).
+            */}
+            {v.isDuplicate && v.duplicateOf && (
+              <Link
+                href={`/cv/vacantes/${v.duplicateOf.id}`}
+                title={`Ver el aviso canónico: ${v.duplicateOf.title}`}
+                className="shrink-0 rounded-lg border border-zinc-300 px-2.5 py-1 text-xs text-zinc-600 hover:bg-zinc-100"
+              >
+                Ver original
+              </Link>
+            )}
             {(v.applyUrl ?? v.url) && (
               <a
                 href={v.applyUrl ?? v.url}

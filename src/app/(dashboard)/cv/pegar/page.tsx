@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ResumeExportPanel } from "@/components/cv/ResumeExportPanel";
 import { cvApi } from "@/lib/cv-api";
 import { Card, Score, StatusBadge } from "@/lib/cv-ui";
-import type { ManualIntakeResponse, ProfileRow, VacancyDetail } from "@/lib/cv-types";
+import type {
+  AppConfig,
+  ManualIntakeResponse,
+  ProfileRow,
+  VacancyDetail,
+} from "@/lib/cv-types";
 
 /** Cada cuánto se consulta el avance del pipeline mientras no haya HV. */
 const POLL_MS = 4000;
@@ -51,9 +56,23 @@ export default function CvPegarOferta() {
 
   // Marca de tiempo del primer match visto sin HV (para el margen de gracia).
   const [matchSeenAt, setMatchSeenAt] = useState<number | null>(null);
+  // Espejo en ref: el tick necesita el valor al instante para decidir si corta.
+  const matchSeenAtRef = useRef<number | null>(null);
   // Reloj que avanza con cada consulta: permite decidir el margen sin leer la
   // hora durante el render (que sería impuro).
   const [now, setNow] = useState(0);
+  // Flags del API: si la HV automática está apagada, el texto lo refleja.
+  const [config, setConfig] = useState<AppConfig | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        setConfig(await cvApi.get<AppConfig>("/config"));
+      } catch {
+        setConfig(null);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     void (async () => {
@@ -85,10 +104,18 @@ export default function CvPegarOferta() {
         setNow(Date.now());
         if (v.match && !v.resume) {
           // Setter funcional: no depende del valor previo en el cierre.
-          setMatchSeenAt((prev) => prev ?? Date.now());
+          matchSeenAtRef.current ??= Date.now();
+          setMatchSeenAt(matchSeenAtRef.current);
         }
         const done = !!v.resume || v.status === "APPLIED" || v.status === "IGNORED";
-        if (!done) timer = setTimeout(tick, POLL_MS);
+        // Con la HV automática apagada (o el match bajo el umbral) no hay nada
+        // más que esperar: se corta al pasar la gracia en vez de sondear siempre.
+        const gaveUp =
+          !!v.match &&
+          !v.resume &&
+          matchSeenAtRef.current !== null &&
+          Date.now() - matchSeenAtRef.current > GRACE_MS;
+        if (!done && !gaveUp) timer = setTimeout(tick, POLL_MS);
       } catch (e) {
         if (!stopped) setError(e instanceof Error ? e.message : String(e));
       }
@@ -121,6 +148,7 @@ export default function CvPegarOferta() {
     setMsg("");
     setVac(null);
     setMatchSeenAt(null);
+    matchSeenAtRef.current = null;
     try {
       const res = await cvApi.post<ManualIntakeResponse>("/vacancies/from-text", {
         text,
@@ -173,7 +201,9 @@ export default function CvPegarOferta() {
           ? "Analizando la oferta y extrayendo requisitos…"
           : vac.status === "NORMALIZED"
             ? "Evaluando el encaje con el perfil…"
-            : "Generando la hoja de vida…";
+            : config?.autoResumeEnabled === false
+              ? "Encaje calculado: generá la HV a pedido"
+              : "Generando la hoja de vida…";
 
   return (
     <div className="max-w-5xl">
@@ -304,11 +334,13 @@ export default function CvPegarOferta() {
           {stalled && vac?.match && (
             <Card>
               <h2 className="text-sm font-semibold text-amber-700">
-                El match no superó el umbral ({vac.match.score}/100 · {vac.match.verdict})
+                La hoja de vida no se generó automáticamente ({vac.match.score}/100 ·{" "}
+                {vac.match.verdict})
               </h2>
               <p className="mt-1 text-sm text-zinc-500">
-                Por eso no se generó la hoja automáticamente. Si querés postular igual, generala a
-                pedido.
+                {config?.autoResumeEnabled === false
+                  ? "La generación automática está apagada (ahorro de costos): generala a pedido cuando quieras."
+                  : "El match no alcanzó el umbral, así que no se generó sola. Si querés postular igual, generala a pedido."}
               </p>
               <ListBlock title="Razones" items={vac.match.reasons} />
               <ListBlock title="Brechas" items={vac.match.gaps} />
