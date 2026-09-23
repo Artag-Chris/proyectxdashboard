@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { socialApi } from "@/lib/social-api";
-import type { MetricSnapshot, PerformanceReport, Profile, Usage } from "@/lib/social-types";
+import type { Growth, MetricSnapshot, ObjectiveGap, ObjectiveUnit, PerformanceReport, Profile, Usage } from "@/lib/social-types";
 import {
   Badge,
   Button,
@@ -12,6 +12,9 @@ import {
   Field,
   Input,
   Loading,
+  OBJECTIVE_METRIC_LABEL,
+  OBJECTIVE_VERDICT_LABEL,
+  OBJECTIVE_VERDICT_TONE,
   ProfilePicker,
   SectionTitle,
   Select,
@@ -54,6 +57,13 @@ export default function SocialMetrics() {
     [profileId],
   );
   const { data: usage } = usePoll<Usage>(() => socialApi.get("/usage?days=30"), 60000);
+  // El gap de objetivos lo calcula el harness (aritmética, sin IA): se puede refrescar sin
+  // pensar en el gasto.
+  const { data: growth } = usePoll<Growth | null>(
+    () => (profileId ? socialApi.get(`/profiles/${profileId}/growth?days=30`) : Promise.resolve(null)),
+    30000,
+    [profileId],
+  );
 
   const [snapshot, setSnapshot] = useState({ capturedAt: "", followers: "", reach: "", engagementRate: "" });
   const [csv, setCsv] = useState("");
@@ -107,6 +117,58 @@ export default function SocialMetrics() {
 
       <ErrorBox message={error} />
       {message && <p className="mt-2 text-sm text-emerald-700">{message}</p>}
+
+      <Card className="mt-4">
+        <SectionTitle hint="calculado sobre tu histórico: sin IA y sin costo">
+          Objetivos: ¿vas a llegar?
+        </SectionTitle>
+        {!growth ? (
+          <Loading />
+        ) : growth.objectives.length === 0 ? (
+          <Empty>
+            Este perfil no tiene objetivos cargados. Creá uno en «Perfiles» (seguidores, engagement,
+            alcance…) y acá te digo cuánto falta y si el ritmo alcanza.
+          </Empty>
+        ) : (
+          <div className="space-y-3">
+            {growth.objectives.map((objective) => (
+              <div
+                key={objective.metric}
+                className="flex flex-wrap items-start justify-between gap-2 border-b border-zinc-100 pb-3 last:border-0 last:pb-0"
+              >
+                <div>
+                  <div className="text-sm font-medium text-zinc-800">
+                    {OBJECTIVE_METRIC_LABEL[objective.metric] ?? objective.metric}: objetivo{" "}
+                    {fmtObjective(objective.target, objective.unit)}
+                  </div>
+                  <div className="mt-0.5 text-xs text-zinc-500">{gapDetail(objective)}</div>
+                </div>
+                <Badge tone={OBJECTIVE_VERDICT_TONE[objective.verdict] ?? "zinc"}>
+                  {OBJECTIVE_VERDICT_LABEL[objective.verdict] ?? objective.verdict}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {growth && growth.accounts.length > 0 && (
+          <div className="mt-4 rounded-lg bg-zinc-50 p-3 text-xs text-zinc-600">
+            <div className="font-medium text-zinc-700">
+              Ritmo por cuenta ({growth.windowDays} día(s) en la ventana)
+            </div>
+            <ul className="mt-1 space-y-0.5">
+              {growth.accounts.map((account) => (
+                <li key={`${account.platform}-${account.handle}`}>
+                  {account.platform} · {account.handle}:{" "}
+                  {account.followers
+                    ? `${account.followers.from} → ${account.followers.to} (${signed(account.followers.delta)}, ≈ ${signed(account.followers.perWeek)}/semana)`
+                    : "sin seguidores cargados en la ventana"}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Card>
 
       <div className="mt-2 grid gap-4 lg:grid-cols-2">
         <Card>
@@ -325,4 +387,51 @@ export default function SocialMetrics() {
       </p>
     </div>
   );
+}
+
+function unitSuffix(unit: ObjectiveUnit): string {
+  if (unit === "PERCENT") return " %";
+  if (unit === "PER_WEEK") return "/semana";
+  return "";
+}
+
+function fmtObjective(value: number, unit: ObjectiveUnit): string {
+  return `${value}${unitSuffix(unit)}`;
+}
+
+/**
+ * Un ritmo por semana. Ojo: en las tasas (`PER_WEEK`) la unidad del objetivo YA es semanal,
+ * así que agregarle otro "/semana" daría "1.5/semana/semana".
+ */
+function fmtPerWeek(value: number, unit: ObjectiveUnit): string {
+  const sign = value >= 0 ? "+" : "";
+  return unit === "PER_WEEK" ? `${sign}${value}/semana` : `${sign}${value}${unitSuffix(unit)}/semana`;
+}
+
+function signed(value: number): string {
+  return `${value >= 0 ? "+" : ""}${value}`;
+}
+
+/** La explicación del veredicto con los números: todo viene calculado del harness. */
+function gapDetail(objective: ObjectiveGap): string {
+  if (objective.current === null) return "Sin datos para saber dónde estás.";
+
+  const parts = [`hoy ${fmtObjective(objective.current, objective.unit)}`];
+
+  if (objective.remaining !== null && objective.remaining > 0) {
+    parts.push(`faltan ${fmtObjective(objective.remaining, objective.unit)}`);
+  }
+  if (objective.daysLeft !== null) parts.push(`${objective.daysLeft} día(s) de plazo`);
+  // En una tasa, "lo que hace falta por semana" no significa nada: ya se ve el ritmo abajo.
+  if (objective.neededPerWeek !== null && objective.unit !== "PER_WEEK") {
+    parts.push(`necesitás ${fmtPerWeek(objective.neededPerWeek, objective.unit)}`);
+  }
+  if (objective.currentPerWeek !== null) {
+    parts.push(`vas a ${fmtPerWeek(objective.currentPerWeek, objective.unit)}`);
+  }
+  if (objective.projected !== null) {
+    parts.push(`proyección al plazo: ${fmtObjective(objective.projected, objective.unit)}`);
+  }
+
+  return parts.join(" · ");
 }

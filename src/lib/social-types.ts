@@ -213,6 +213,49 @@ export interface PerformanceReport {
   createdAt: string;
 }
 
+/** Unidad del objetivo, para no tener que adivinarla al mostrarlo. */
+export type ObjectiveUnit = "COUNT" | "PERCENT" | "PER_WEEK";
+
+/**
+ * Veredicto del gap. `NO_PACE` y `NO_CURRENT` son los casos honestos: no alcanzan los datos
+ * para saber si llegás (en vez de inventar una proyección).
+ */
+export type ObjectiveVerdict = "ACHIEVED" | "ON_TRACK" | "BEHIND" | "NO_PACE" | "NO_CURRENT";
+
+/** Gap de un objetivo: lo calcula el harness con aritmética, sin IA. */
+export interface ObjectiveGap {
+  metric: string;
+  unit: ObjectiveUnit;
+  target: number;
+  current: number | null;
+  remaining: number | null;
+  daysLeft: number | null;
+  /** Lo que hace falta por semana para llegar a tiempo. */
+  neededPerWeek: number | null;
+  /** Lo que se viene sumando por semana (`null` = no hay ritmo medible). */
+  currentPerWeek: number | null;
+  /** A dónde llegás si seguís al ritmo actual. */
+  projected: number | null;
+  verdict: ObjectiveVerdict;
+}
+
+export interface AccountGrowth {
+  platform: PlatformKey;
+  handle: string;
+  followers?: { from: number; to: number; delta: number; perWeek: number };
+  reach?: number;
+  engagementRate?: number;
+  daysMeasured: number;
+  windowDays: number;
+}
+
+export interface Growth {
+  windowDays: number;
+  accounts: AccountGrowth[];
+  objectives: ObjectiveGap[];
+  measured: { accounts: number; snapshots: number };
+}
+
 export interface Usage {
   window: { days: number; from: string; to: string };
   totals: { runs: number; tokensIn: number; tokensOut: number; costUsd: number };

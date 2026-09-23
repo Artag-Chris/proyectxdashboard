@@ -142,6 +142,35 @@ export const SIGNAL_KIND_LABEL: Record<string, string> = {
   OTHER: "Otro",
 };
 
+/** Objetivos medibles (los mismos valores que `ObjectiveMetric` en el harness). */
+export const OBJECTIVE_METRIC_LABEL: Record<string, string> = {
+  FOLLOWERS: "Seguidores",
+  ENGAGEMENT_RATE: "Engagement",
+  REACH: "Alcance",
+  POSTS_PER_WEEK: "Publicaciones por semana",
+  LEADS: "Leads",
+};
+
+/**
+ * Veredicto del gap de objetivos. Lo calcula el harness (`metrics/growth.ts`) y acá solo se
+ * traduce: el dashboard no estima ritmos por su cuenta.
+ */
+export const OBJECTIVE_VERDICT_LABEL: Record<string, string> = {
+  ACHIEVED: "Cumplido",
+  ON_TRACK: "Vas bien",
+  BEHIND: "Atrasado",
+  NO_PACE: "Faltan mediciones",
+  NO_CURRENT: "Falta el dato",
+};
+
+export const OBJECTIVE_VERDICT_TONE: Record<string, "zinc" | "emerald" | "amber" | "red" | "blue" | "violet"> = {
+  ACHIEVED: "emerald",
+  ON_TRACK: "emerald",
+  BEHIND: "red",
+  NO_PACE: "amber",
+  NO_CURRENT: "zinc",
+};
+
 export function Empty({ children }: { children: React.ReactNode }) {
   return <p className="py-6 text-center text-sm text-zinc-400">{children}</p>;
 }
