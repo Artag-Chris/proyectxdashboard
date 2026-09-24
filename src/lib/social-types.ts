@@ -281,6 +281,32 @@ export interface AudienceSegment {
   createdAt: string;
 }
 
+/**
+ * Comunidad donde participar (subreddit, grupo, canal, hashtag…).
+ *
+ * `status` es lo que decidió el humano y `verifiedAt` si confirmó que el lugar existe: una
+ * propuesta de IA nace `PROPOSED` y sin verificar, porque puede estar inventada.
+ */
+export interface CommunityTarget {
+  id: string;
+  profileId: string;
+  kind: string;
+  name: string;
+  url: string | null;
+  size: string | null;
+  activity: string | null;
+  audienceFit: number;
+  why: string;
+  segmentId: string | null;
+  segment?: { id: string; name: string } | null;
+  status: string;
+  /** `ia` | `manual` | `plantilla`. */
+  source: string;
+  notes: string | null;
+  verifiedAt: string | null;
+  createdAt: string;
+}
+
 export interface Usage {
   window: { days: number; from: string; to: string };
   totals: { runs: number; tokensIn: number; tokensOut: number; costUsd: number };

@@ -171,6 +171,34 @@ export const OBJECTIVE_VERDICT_TONE: Record<string, "zinc" | "emerald" | "amber"
   NO_CURRENT: "zinc",
 };
 
+/** Tipos de comunidad (las claves del catálogo del harness). */
+export const COMMUNITY_KIND_LABEL: Record<string, string> = {
+  REDDIT: "Subreddit",
+  FACEBOOK_GROUP: "Grupo de Facebook",
+  DISCORD: "Discord",
+  TELEGRAM: "Telegram",
+  FORO: "Foro",
+  HASHTAG: "Hashtag",
+  CANAL: "Canal o creador",
+  NEWSLETTER: "Newsletter",
+  OTRO: "Otro",
+};
+
+/** Estado de una comunidad: qué decidió el humano (no de dónde salió). */
+export const COMMUNITY_STATUS_LABEL: Record<string, string> = {
+  PROPOSED: "Sin revisar",
+  ACCEPTED: "Aceptada",
+  DISCARDED: "Descartada",
+  JOINED: "Ya estoy",
+};
+
+export const COMMUNITY_STATUS_TONE: Record<string, "zinc" | "emerald" | "amber" | "red" | "blue" | "violet"> = {
+  PROPOSED: "amber",
+  ACCEPTED: "blue",
+  DISCARDED: "zinc",
+  JOINED: "emerald",
+};
+
 export function Empty({ children }: { children: React.ReactNode }) {
   return <p className="py-6 text-center text-sm text-zinc-400">{children}</p>;
 }

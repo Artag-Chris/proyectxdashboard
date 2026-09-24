@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { socialApi } from "@/lib/social-api";
-import type { AudienceSegment, Profile } from "@/lib/social-types";
+import type { AudienceSegment, CommunityTarget, Profile } from "@/lib/social-types";
 import {
   Badge,
   Button,
+  COMMUNITY_KIND_LABEL,
+  COMMUNITY_STATUS_LABEL,
+  COMMUNITY_STATUS_TONE,
   Card,
   Empty,
   ErrorBox,
@@ -14,6 +17,7 @@ import {
   Loading,
   ProfilePicker,
   SectionTitle,
+  Select,
   Textarea,
   useActiveProfile,
 } from "@/lib/social-ui";
@@ -47,6 +51,7 @@ export default function SocialCommunity() {
   const { data: profiles, reload: reloadProfiles } = usePoll<Profile[]>(() => socialApi.get("/profiles"), 60000);
   const { profileId, select } = useActiveProfile(profiles ?? []);
   const [showArchived, setShowArchived] = useState(false);
+  const [showDiscarded, setShowDiscarded] = useState(false);
 
   const { data: segments, reload: reloadSegments } = usePoll<AudienceSegment[]>(
     () =>
@@ -58,9 +63,16 @@ export default function SocialCommunity() {
   );
 
   const [form, setForm] = useState({ name: "", description: "", pains: "", desires: "", objections: "", channels: "" });
+  const [targetForm, setTargetForm] = useState({ name: "", kind: "REDDIT", url: "", why: "", segmentId: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  const { data: targets, reload: reloadTargets } = usePoll<CommunityTarget[]>(
+    () => (profileId ? socialApi.get(`/profiles/${profileId}/communities`) : Promise.resolve([])),
+    30000,
+    [profileId],
+  );
 
   async function run(label: string, call: () => Promise<unknown>, ok: string) {
     setBusy(true);
@@ -70,6 +82,7 @@ export default function SocialCommunity() {
       await call();
       setMessage(ok);
       reloadSegments();
+      reloadTargets();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -79,6 +92,8 @@ export default function SocialCommunity() {
 
   const activos = (segments ?? []).filter((segment) => segment.archivedAt === null);
   const archivados = (segments ?? []).filter((segment) => segment.archivedAt !== null);
+  const descartadas = (targets ?? []).filter((target) => target.status === "DISCARDED");
+  const visibles = (targets ?? []).filter((target) => !(target.status === "DISCARDED" && !showDiscarded));
 
   return (
     <div>
@@ -196,6 +211,229 @@ export default function SocialCommunity() {
             )}
           </div>
         )}
+      </Card>
+
+      <Card className="mt-4">
+        <SectionTitle hint="una propuesta de IA puede estar equivocada: confirmá que exista antes de usarla">
+          Comunidades: dónde participar
+        </SectionTitle>
+
+        {!targets ? (
+          <Loading />
+        ) : visibles.length === 0 ? (
+          <Empty>
+            Sin comunidades. Dale a «Proponer lugares con IA» (sale de tus segmentos) o agregá una a mano.
+          </Empty>
+        ) : (
+          <div className="space-y-4">
+            {visibles.map((target) => (
+              <div key={target.id} className="border-b border-zinc-100 pb-4 last:border-0 last:pb-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-zinc-800">{target.name}</span>
+                  <Badge tone="zinc">{COMMUNITY_KIND_LABEL[target.kind] ?? target.kind}</Badge>
+                  <Badge tone={COMMUNITY_STATUS_TONE[target.status] ?? "zinc"}>
+                    {COMMUNITY_STATUS_LABEL[target.status] ?? target.status}
+                  </Badge>
+                  {target.verifiedAt === null ? (
+                    <Badge tone="red">Sin verificar</Badge>
+                  ) : (
+                    <span className="text-xs text-emerald-700">Verificada</span>
+                  )}
+                  <span className="text-xs text-zinc-500">encaje {target.audienceFit}/100</span>
+                  {target.segment?.name && (
+                    <span className="text-xs text-zinc-400">para: {target.segment.name}</span>
+                  )}
+                </div>
+
+                <p className="mt-1 text-sm text-zinc-600">{target.why}</p>
+                {(target.size || target.activity) && (
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {[target.size, target.activity].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {target.url && (
+                    <a
+                      href={target.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-blue-700 underline"
+                    >
+                      Abrir
+                    </a>
+                  )}
+                  {target.status !== "ACCEPTED" && (
+                    <Button
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() =>
+                        run(
+                          "accept",
+                          () => socialApi.patch(`/profiles/${profileId}/communities/${target.id}`, { status: "ACCEPTED" }),
+                          "Comunidad aceptada.",
+                        )
+                      }
+                    >
+                      Aceptar
+                    </Button>
+                  )}
+                  {target.status !== "JOINED" && (
+                    <Button
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() =>
+                        run(
+                          "joined",
+                          () => socialApi.patch(`/profiles/${profileId}/communities/${target.id}`, { status: "JOINED" }),
+                          "Marcada como «ya estoy».",
+                        )
+                      }
+                    >
+                      Ya estoy
+                    </Button>
+                  )}
+                  {target.verifiedAt === null && (
+                    <Button
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() =>
+                        run(
+                          "verify",
+                          () => socialApi.patch(`/profiles/${profileId}/communities/${target.id}`, { verified: true }),
+                          "Comunidad verificada.",
+                        )
+                      }
+                    >
+                      Confirmar que existe
+                    </Button>
+                  )}
+                  {target.status !== "DISCARDED" && (
+                    <Button
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() =>
+                        run(
+                          "discard",
+                          () => socialApi.patch(`/profiles/${profileId}/communities/${target.id}`, { status: "DISCARDED" }),
+                          "Comunidad descartada.",
+                        )
+                      }
+                    >
+                      Descartar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {descartadas.length > 0 && (
+          <div className="mt-3">
+            <button
+              type="button"
+              className="text-xs text-zinc-500 underline"
+              onClick={() => setShowDiscarded((value) => !value)}
+            >
+              {showDiscarded ? "Ocultar descartadas" : `Ver descartadas (${descartadas.length})`}
+            </button>
+          </div>
+        )}
+
+        <div className="mt-4 border-t border-zinc-100 pt-3">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              disabled={busy || !profileId || activos.length === 0}
+              onClick={() =>
+                run(
+                  "proposeTargets",
+                  () => socialApi.post(`/profiles/${profileId}/communities/propose`),
+                  "Propuesta encolada. Tarda unos segundos (una llamada de IA); después recargá.",
+                )
+              }
+            >
+              Proponer lugares con IA
+            </Button>
+            {activos.length === 0 && (
+              <span className="self-center text-xs text-amber-700">
+                Primero cargá audiencia: los lugares salen de dónde está tu gente.
+              </span>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      <Card className="mt-4">
+        <SectionTitle hint="lo que cargues vos nace aceptado y verificado">Agregar una comunidad a mano</SectionTitle>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Nombre">
+            <Input
+              value={targetForm.name}
+              onChange={(event) => setTargetForm({ ...targetForm, name: event.target.value })}
+            />
+          </Field>
+          <Field label="Tipo">
+            <Select
+              value={targetForm.kind}
+              onChange={(event) => setTargetForm({ ...targetForm, kind: event.target.value })}
+            >
+              {Object.entries(COMMUNITY_KIND_LABEL).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Enlace" hint="opcional">
+            <Input
+              value={targetForm.url}
+              onChange={(event) => setTargetForm({ ...targetForm, url: event.target.value })}
+            />
+          </Field>
+          <Field label="Para qué segmento" hint="opcional">
+            <Select
+              value={targetForm.segmentId}
+              onChange={(event) => setTargetForm({ ...targetForm, segmentId: event.target.value })}
+            >
+              <option value="">—</option>
+              {activos.map((segment) => (
+                <option key={segment.id} value={segment.id}>
+                  {segment.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Por qué te conviene">
+            <Input
+              value={targetForm.why}
+              onChange={(event) => setTargetForm({ ...targetForm, why: event.target.value })}
+            />
+          </Field>
+        </div>
+        <div className="mt-2">
+          <Button
+            variant="secondary"
+            disabled={busy || !profileId || targetForm.name.trim().length < 3 || targetForm.why.trim().length < 10}
+            onClick={() =>
+              run(
+                "createTarget",
+                () =>
+                  socialApi.post(`/profiles/${profileId}/communities`, {
+                    name: targetForm.name.trim(),
+                    kind: targetForm.kind,
+                    why: targetForm.why.trim(),
+                    ...(targetForm.url.trim() ? { url: targetForm.url.trim() } : {}),
+                    ...(targetForm.segmentId ? { segmentId: targetForm.segmentId } : {}),
+                  }),
+                "Comunidad guardada.",
+              ).then(() => setTargetForm({ name: "", kind: "REDDIT", url: "", why: "", segmentId: "" }))
+            }
+          >
+            Guardar comunidad
+          </Button>
+        </div>
       </Card>
 
       <Card className="mt-4">
