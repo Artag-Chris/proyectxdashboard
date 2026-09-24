@@ -256,6 +256,31 @@ export interface Growth {
   measured: { accounts: number; snapshots: number };
 }
 
+/**
+ * Segmento de audiencia: a quién le habla el perfil.
+ *
+ * Es el objeto que comparten los coaches (el de comunidad lo produce, el de contenido lo
+ * usa para escribir), por eso vive como entidad y no como texto suelto.
+ */
+export interface AudienceSegment {
+  id: string;
+  profileId: string;
+  name: string;
+  description: string;
+  pains: string[];
+  desires: string[];
+  objections: string[];
+  /** Dónde está esa gente (subreddits, grupos, hashtags, canales). */
+  channels: string[];
+  languageTips: string | null;
+  /** De qué material salió: es lo que hace auditable una propuesta de IA. */
+  evidence: string[];
+  /** `ia` | `manual` | `plantilla` — no se disfraza una plantilla de sugerencia del modelo. */
+  source: string;
+  archivedAt: string | null;
+  createdAt: string;
+}
+
 export interface Usage {
   window: { days: number; from: string; to: string };
   totals: { runs: number; tokensIn: number; tokensOut: number; costUsd: number };

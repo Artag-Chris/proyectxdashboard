@@ -9,6 +9,7 @@ const TABS = [
   { href: "/social", label: "Resumen" },
   { href: "/social/tendencias", label: "Tendencias" },
   { href: "/social/ideas", label: "Ideas y calendario" },
+  { href: "/social/comunidad", label: "Comunidad" },
   { href: "/social/inspiracion", label: "Pegar inspiración" },
   { href: "/social/perfiles", label: "Perfiles" },
   { href: "/social/fuentes", label: "Fuentes" },
