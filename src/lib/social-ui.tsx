@@ -2,6 +2,7 @@
 
 // Kit chico de UI para la pestaña Social Coach. Mismo estilo que el resto del
 // dashboard (rounded-xl + zinc + emerald) en vez de traer una librería nueva.
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -283,7 +284,13 @@ export function useActiveProfile(profiles: { id: string; name: string }[] | null
   return { profileId: effective, select, ready: list.length > 0 };
 }
 
-/** Selector del perfil activo (toda la pestaña mira uno). */
+/**
+ * Selector del perfil activo (toda la pestaña mira uno).
+ *
+ * Con un solo perfil no hay nada que elegir, pero igual se muestra cuál está activo: sin
+ * esto, quien recién entra no sabe sobre qué perfil está trabajando. Con ninguno, el
+ * componente es el único lugar que avisa que falta crearlo (aparece en todas las pestañas).
+ */
 export function ProfilePicker({
   profiles,
   value,
@@ -293,7 +300,31 @@ export function ProfilePicker({
   value: string;
   onChange: (id: string) => void;
 }) {
-  if (profiles.length <= 1) return null;
+  if (profiles.length === 0) {
+    return (
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-zinc-500">Perfil:</span>
+        <Link
+          href="/social/empezar"
+          className="rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-sm text-emerald-700 hover:bg-emerald-100"
+        >
+          Todavía no hay ninguno · crear el primero
+        </Link>
+      </div>
+    );
+  }
+
+  if (profiles.length === 1) {
+    return (
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-zinc-500">Perfil:</span>
+        <span className="rounded-full bg-emerald-600 px-3 py-1 text-sm text-white">
+          {profiles[0]?.name}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
       <span className="text-xs text-zinc-500">Perfil:</span>

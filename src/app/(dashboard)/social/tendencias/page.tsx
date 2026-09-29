@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { socialApi } from "@/lib/social-api";
+import { LockedCard } from "@/lib/social-setup";
 import type { PlatformDef, Profile, SignalListResponse } from "@/lib/social-types";
 import {
   Badge,
@@ -30,6 +31,9 @@ import { usePoll } from "@/lib/usePoll";
 export default function SocialTrends() {
   const { data: profiles } = usePoll<Profile[]>(() => socialApi.get("/profiles"), 60000);
   const { profileId, select } = useActiveProfile(profiles ?? []);
+  const profile = (profiles ?? []).find((candidate) => candidate.id === profileId) ?? null;
+  // Sin fuentes activas no hay de dónde traer señales: es el paso que desbloquea esta pestaña.
+  const sinFuentes = !!profile && profile.sources.filter((source) => source.enabled).length === 0;
   const { data: platforms } = usePoll<PlatformDef[]>(() => socialApi.get("/platforms"), 300000);
 
   const [minRelevance, setMinRelevance] = useState("1");
@@ -51,7 +55,10 @@ export default function SocialTrends() {
   });
 
   const { data, error: pollError, reload } = usePoll<SignalListResponse>(
-    () => socialApi.get(`/signals?${params.toString()}`),
+    () =>
+      profileId
+        ? socialApi.get(`/signals?${params.toString()}`)
+        : Promise.resolve({ total: 0, count: 0, signals: [] }),
     30000,
     [profileId, minRelevance, days, kind, search],
   );
@@ -151,11 +158,20 @@ export default function SocialTrends() {
       {!data ? (
         <Loading />
       ) : data.signals.length === 0 ? (
-        <Card className="mt-4">
-          <Empty>
-            No hay señales para estos filtros. Dale a «Buscar ahora» o pegá una inspiración.
-          </Empty>
-        </Card>
+        sinFuentes ? (
+          <LockedCard
+            title="Todavía no hay de dónde traer señales"
+            requirement="Las señales (tendencias, noticias, videos) entran por las fuentes que le conectás al perfil. No tiene ninguna activa, así que no hay nada que buscar."
+            href="/social/fuentes"
+            actionLabel="Conectar una fuente"
+          />
+        ) : (
+          <Card className="mt-4">
+            <Empty>
+              No hay señales para estos filtros. Dale a «Buscar ahora» o pegá una inspiración.
+            </Empty>
+          </Card>
+        )
       ) : (
         <div className="mt-4 space-y-3">
           <div className="text-xs text-zinc-500">

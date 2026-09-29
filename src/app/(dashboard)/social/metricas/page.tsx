@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { socialApi } from "@/lib/social-api";
+import { GoButton, LockedCard } from "@/lib/social-setup";
 import type { Growth, MetricSnapshot, ObjectiveGap, ObjectiveUnit, PerformanceReport, Profile, Usage } from "@/lib/social-types";
 import {
   Badge,
@@ -125,10 +126,12 @@ export default function SocialMetrics() {
         {!growth ? (
           <Loading />
         ) : growth.objectives.length === 0 ? (
-          <Empty>
-            Este perfil no tiene objetivos cargados. Creá uno en «Perfiles» (seguidores, engagement,
-            alcance…) y acá te digo cuánto falta y si el ritmo alcanza.
-          </Empty>
+          <LockedCard
+            title="Todavía no hay objetivos que medir"
+            requirement="Un objetivo con plazo (seguidores, engagement, alcance…) es lo que hace que esta tarjeta sirva: el harness compara tu ritmo real contra la meta. Sin objetivo no hay nada que comparar."
+            href="/social/perfiles"
+            actionLabel="Definir un objetivo"
+          />
         ) : (
           <div className="space-y-3">
             {growth.objectives.map((objective) => (
@@ -173,6 +176,17 @@ export default function SocialMetrics() {
       <div className="mt-2 grid gap-4 lg:grid-cols-2">
         <Card>
           <SectionTitle hint="una fila por día, la fecha es obligatoria">Cargar métricas</SectionTitle>
+          {profile && profile.accounts.length === 0 && (
+            <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+              <p className="text-sm text-amber-800">
+                Este perfil todavía no tiene cuentas, y las métricas son por cuenta y por día: sin una
+                cuenta no hay dónde cargarlas.
+              </p>
+              <div className="mt-2">
+                <GoButton href="/social/perfiles">Agregar una cuenta</GoButton>
+              </div>
+            </div>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Cuenta">
               <Select value={accountId} onChange={(event) => setAccountId(event.target.value)}>

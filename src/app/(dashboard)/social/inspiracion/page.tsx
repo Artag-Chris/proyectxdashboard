@@ -41,7 +41,10 @@ export default function SocialInspiration() {
   const [error, setError] = useState<string | null>(null);
 
   const { data: pasted, reload } = usePoll<SignalListResponse>(
-    () => socialApi.get(`/signals?kind=INSPIRATION&profileId=${profileId}&limit=20`),
+    () =>
+      profileId
+        ? socialApi.get(`/signals?kind=INSPIRATION&profileId=${profileId}&limit=20`)
+        : Promise.resolve({ total: 0, count: 0, signals: [] }),
     30000,
     [profileId],
   );

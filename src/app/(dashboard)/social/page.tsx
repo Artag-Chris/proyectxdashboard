@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { socialApi } from "@/lib/social-api";
+import { GoButton, SetupChecklist } from "@/lib/social-setup";
 import type { AppConfig, Idea, NotificationList, Profile, SignalListResponse, Usage } from "@/lib/social-types";
 import {
   Badge,
@@ -34,12 +35,15 @@ export default function SocialOverview() {
   const profile = (profiles ?? []).find((candidate) => candidate.id === profileId) ?? null;
 
   const { data: signals } = usePoll<SignalListResponse>(
-    () => socialApi.get(`/signals?limit=5&minRelevance=1&profileId=${profileId}`),
+    () =>
+      profileId
+        ? socialApi.get(`/signals?limit=5&minRelevance=1&profileId=${profileId}`)
+        : Promise.resolve({ total: 0, count: 0, signals: [] }),
     30000,
     [profileId],
   );
   const { data: ideas } = usePoll<Idea[]>(
-    () => socialApi.get(`/ideas?profileId=${profileId}&limit=5`),
+    () => (profileId ? socialApi.get(`/ideas?profileId=${profileId}&limit=5`) : Promise.resolve([])),
     30000,
     [profileId],
   );
@@ -83,14 +87,15 @@ export default function SocialOverview() {
       <div>
         <h1 className="text-xl font-bold">Social Coach</h1>
         <Card className="mt-4">
-          <SectionTitle>Todavía no hay perfiles</SectionTitle>
+          <SectionTitle hint="tres pasos, y con el primero ya podés entrar">Todavía no hay perfiles</SectionTitle>
           <p className="text-sm text-zinc-600">
-            Creá el primero en{" "}
-            <Link href="/social/perfiles" className="text-emerald-700 underline">
-              Perfiles
-            </Link>
-            : el coach necesita saber el nicho para poder decirte de qué hablar.
+            Todo lo que hace el harness cuelga de un perfil: sin perfil no sabe a quién le hablás ni de
+            qué hablar. La guía te pregunta lo mínimo, guarda cada paso y los dos últimos los podés
+            saltear.
           </p>
+          <div className="mt-3">
+            <GoButton href="/social/empezar">Crear mi primer perfil</GoButton>
+          </div>
         </Card>
       </div>
     );
@@ -120,6 +125,8 @@ export default function SocialOverview() {
       <div className="mt-4">
         <ProfilePicker profiles={profiles} value={profileId} onChange={select} />
       </div>
+
+      <SetupChecklist profileId={profileId} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {cards.map((card) => (

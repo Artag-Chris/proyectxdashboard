@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { socialApi } from "@/lib/social-api";
+import { LockedCard } from "@/lib/social-setup";
 import type { Idea, PlatformDef, Profile } from "@/lib/social-types";
 import {
   Badge,
@@ -44,7 +45,10 @@ export default function SocialIdeas() {
   const [error, setError] = useState<string | null>(null);
 
   const { data: ideas, error: pollError, reload } = usePoll<Idea[]>(
-    () => socialApi.get(`/ideas?profileId=${profileId}${status ? `&status=${status}` : ""}&limit=100`),
+    () =>
+      profileId
+        ? socialApi.get(`/ideas?profileId=${profileId}${status ? `&status=${status}` : ""}&limit=100`)
+        : Promise.resolve([]),
     30000,
     [profileId, status],
   );
@@ -212,12 +216,18 @@ export default function SocialIdeas() {
       {!ideas ? (
         <Loading />
       ) : ideas.length === 0 ? (
-        <Card className="mt-4">
-          <Empty>
-            No hay ideas con este filtro. Se generan solas cuando una señal pasa el umbral, o a mano
-            con «Generar ideas ahora».
-          </Empty>
-        </Card>
+        status ? (
+          <Card className="mt-4">
+            <Empty>No hay ideas con este filtro.</Empty>
+          </Card>
+        ) : (
+          <LockedCard
+            title="Todavía no hay ideas"
+            requirement="Las ideas se escriben sobre señales ya analizadas con relevancia 60 o más. Sin ninguna, el coach no tiene de qué hablar y «Generar ideas ahora» te va a avisar justamente eso. Traé señales desde Tendencias, o cargá una idea a mano."
+            href="/social/tendencias"
+            actionLabel="Ir a Tendencias"
+          />
+        )
       ) : (
         <div className="mt-4 space-y-3">
           {ideas.map((idea) => (

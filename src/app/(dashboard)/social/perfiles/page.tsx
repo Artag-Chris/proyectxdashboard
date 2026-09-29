@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { socialApi } from "@/lib/social-api";
+import { GoButton } from "@/lib/social-setup";
 import type { PlatformDef, Profile } from "@/lib/social-types";
 import {
   Badge,
   Button,
   Card,
-  Empty,
   ErrorBox,
   Field,
   Input,
@@ -178,7 +178,14 @@ export default function SocialProfiles() {
         <Loading />
       ) : profiles.length === 0 ? (
         <Card className="mt-4">
-          <Empty>Todavía no hay perfiles. Creá el primero.</Empty>
+          <SectionTitle hint="con el nombre ya alcanza para entrar">Todavía no hay perfiles</SectionTitle>
+          <p className="text-sm text-zinc-600">
+            Sin perfil el harness no sabe a quién le hablás. La guía te pregunta lo mínimo en 3 pasos
+            (y guarda cada uno); si preferís cargarlo a mano, el formulario de arriba hace lo mismo.
+          </p>
+          <div className="mt-3">
+            <GoButton href="/social/empezar">Ir a la guía de 3 pasos</GoButton>
+          </div>
         </Card>
       ) : (
         <div className="mt-4 space-y-3">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { socialApi } from "@/lib/social-api";
+import { LockedCard } from "@/lib/social-setup";
 import type { AudienceSegment, CommunityTarget, Profile } from "@/lib/social-types";
 import {
   Badge,
@@ -50,6 +51,10 @@ const SOURCE_TONE: Record<string, "zinc" | "emerald" | "amber" | "red" | "blue" 
 export default function SocialCommunity() {
   const { data: profiles, reload: reloadProfiles } = usePoll<Profile[]>(() => socialApi.get("/profiles"), 60000);
   const { profileId, select } = useActiveProfile(profiles ?? []);
+  const profile = (profiles ?? []).find((candidate) => candidate.id === profileId) ?? null;
+  // Proponer audiencia necesita nicho o audiencia declarados: el harness se niega a inventar
+  // segmentos sin materia prima, así que la guía tiene que decir eso mismo.
+  const sinMateriaPrima = !!profile && profile.niche.length === 0 && !profile.audience;
   const [showArchived, setShowArchived] = useState(false);
   const [showDiscarded, setShowDiscarded] = useState(false);
 
@@ -131,10 +136,19 @@ export default function SocialCommunity() {
         {!segments ? (
           <Loading />
         ) : activos.length === 0 ? (
-          <Empty>
-            Sin segmentos. Dale a «Proponer con IA» (sale de tu nicho y de lo que publicaste) o
-            agregá uno a mano abajo.
-          </Empty>
+          sinMateriaPrima ? (
+            <LockedCard
+              title="Todavía no puede proponer tu audiencia"
+              requirement="El coach arma los segmentos con tu nicho y con lo que declarás de tu audiencia. Este perfil no tiene ninguno de los dos, así que no los inventa: completalos y volvé, o escribí un segmento a mano acá abajo."
+              href="/social/perfiles"
+              actionLabel="Completar el perfil"
+            />
+          ) : (
+            <Empty>
+              Sin segmentos. Dale a «Proponer con IA» (sale de tu nicho y de lo que publicaste) o
+              agregá uno a mano abajo.
+            </Empty>
+          )
         ) : (
           <div className="space-y-4">
             {activos.map((segment) => (
