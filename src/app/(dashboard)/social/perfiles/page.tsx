@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { socialApi } from "@/lib/social-api";
 import { GoButton } from "@/lib/social-setup";
-import type { PlatformDef, Profile } from "@/lib/social-types";
+import type { Profile } from "@/lib/social-types";
+import { platformList } from "@/lib/social-types";
 import {
   Badge,
   Button,
@@ -38,7 +39,9 @@ const OBJECTIVE_METRICS = [
 
 export default function SocialProfiles() {
   const { data: profiles, error: pollError, reload } = usePoll<Profile[]>(() => socialApi.get("/profiles"), 30000);
-  const { data: platforms } = usePoll<PlatformDef[]>(() => socialApi.get("/platforms"), 300000);
+  const { data: platformsData } = usePoll<unknown>(() => socialApi.get("/platforms"), 300000);
+  // `GET /platforms` devuelve `{ platforms: [...] }`: se normaliza una sola vez acá.
+  const platforms = platformList(platformsData);
   const { profileId, select } = useActiveProfile(profiles ?? []);
   const profile = (profiles ?? []).find((candidate) => candidate.id === profileId) ?? null;
 
@@ -311,7 +314,7 @@ export default function SocialProfiles() {
                   <li key={account.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 pb-2 last:border-0">
                     <span className="text-sm">
                       <Badge tone="zinc">
-                        {platforms?.find((platform) => platform.key === account.platform)?.label ?? account.platform}
+                        {platforms.find((platform) => platform.key === account.platform)?.label ?? account.platform}
                       </Badge>{" "}
                       {account.handle}
                     </span>
@@ -333,7 +336,7 @@ export default function SocialProfiles() {
                   value={accountForm.platform}
                   onChange={(event) => setAccountForm({ ...accountForm, platform: event.target.value })}
                 >
-                  {(platforms ?? []).map((platform) => (
+                  {platforms.map((platform) => (
                     <option key={platform.key} value={platform.key}>
                       {platform.label}
                     </option>

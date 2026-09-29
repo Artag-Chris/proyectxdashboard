@@ -343,6 +343,21 @@ export interface PlatformDef {
   officialMetricsApi: string | null;
 }
 
+/**
+ * Lista de redes, sin importar cómo la devuelva el harness.
+ *
+ * `GET /platforms` responde `{ platforms: [...] }`, pero el dashboard asumía un arreglo pelado
+ * y hacía `platforms.map(...)`: con el objeto, eso revienta la pantalla entera
+ * (`platforms.map is not a function`) y se lleva puesto el límite de error de la sección.
+ * Normalizar acá —y no en cada página— hace que la forma no importe y que ninguna página
+ * pueda volver a caer en lo mismo.
+ */
+export function platformList(value: unknown): PlatformDef[] {
+  if (Array.isArray(value)) return value as PlatformDef[];
+  const nested = (value as { platforms?: unknown } | null | undefined)?.platforms;
+  return Array.isArray(nested) ? (nested as PlatformDef[]) : [];
+}
+
 export interface AppConfig {
   llm: { provider: string; model: string; mock: boolean; fallback: string | null };
   embeddings: { provider: string; model: string; mock: boolean; semantic: boolean };

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { socialApi } from "@/lib/social-api";
-import type { Draft, Idea, PlatformDef } from "@/lib/social-types";
+import type { Draft, Idea } from "@/lib/social-types";
+import { platformList } from "@/lib/social-types";
 import {
   Badge,
   Button,
@@ -32,7 +33,9 @@ export default function SocialIdeaDetail() {
   const params = useParams<{ id: string }>();
   const ideaId = params?.id ?? "";
 
-  const { data: platforms } = usePoll<PlatformDef[]>(() => socialApi.get("/platforms"), 300000);
+  const { data: platformsData } = usePoll<unknown>(() => socialApi.get("/platforms"), 300000);
+  // `GET /platforms` devuelve `{ platforms: [...] }`: se normaliza una sola vez acá.
+  const platforms = platformList(platformsData);
   const [idea, setIdea] = useState<Idea | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -95,7 +98,7 @@ export default function SocialIdeaDetail() {
 
   const drafts = [...(idea.drafts ?? [])].sort((a, b) => b.version - a.version);
   const latest: Draft | undefined = drafts[0];
-  const platformDef = platforms?.find((item) => item.key === idea.platform);
+  const platformDef = platforms.find((item) => item.key === idea.platform);
   const formatDef = platformDef?.formatDetails.find((detail) => detail.key === idea.format);
 
   function copy(text: string) {

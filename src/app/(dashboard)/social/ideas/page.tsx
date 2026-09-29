@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { socialApi } from "@/lib/social-api";
 import { LockedCard } from "@/lib/social-setup";
-import type { Idea, PlatformDef, Profile } from "@/lib/social-types";
+import type { Idea, Profile } from "@/lib/social-types";
+import { platformList } from "@/lib/social-types";
 import {
   Badge,
   Button,
@@ -35,7 +36,9 @@ import { usePoll } from "@/lib/usePoll";
 export default function SocialIdeas() {
   const { data: profiles } = usePoll<Profile[]>(() => socialApi.get("/profiles"), 60000);
   const { profileId, select } = useActiveProfile(profiles ?? []);
-  const { data: platforms } = usePoll<PlatformDef[]>(() => socialApi.get("/platforms"), 300000);
+  const { data: platformsData } = usePoll<unknown>(() => socialApi.get("/platforms"), 300000);
+  // `GET /platforms` devuelve `{ platforms: [...] }`: se normaliza una sola vez acá.
+  const platforms = platformList(platformsData);
   const [status, setStatus] = useState("");
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState<string | null>(null);
@@ -62,7 +65,7 @@ export default function SocialIdeas() {
     scheduledFor: "",
   });
 
-  const selectedPlatform = (platforms ?? []).find((item) => item.key === form.platform);
+  const selectedPlatform = platforms.find((item) => item.key === form.platform);
 
   async function run(label: string, call: () => Promise<unknown>, ok: string) {
     setBusy(true);
@@ -121,7 +124,7 @@ export default function SocialIdeas() {
                 value={form.platform}
                 onChange={(event) => {
                   const next = event.target.value;
-                  const formats = (platforms ?? []).find((item) => item.key === next)?.formats ?? [];
+                  const formats = platforms.find((item) => item.key === next)?.formats ?? [];
                   setForm({
                     ...form,
                     platform: next,
@@ -129,7 +132,7 @@ export default function SocialIdeas() {
                   });
                 }}
               >
-                {(platforms ?? []).map((item) => (
+                {platforms.map((item) => (
                   <option key={item.key} value={item.key}>
                     {item.label}
                   </option>

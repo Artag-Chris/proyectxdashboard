@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { socialApi } from "@/lib/social-api";
 import { LockedCard } from "@/lib/social-setup";
-import type { PlatformDef, Profile, SignalListResponse } from "@/lib/social-types";
+import type { Profile, SignalListResponse } from "@/lib/social-types";
+import { platformList } from "@/lib/social-types";
 import {
   Badge,
   Button,
@@ -34,7 +35,9 @@ export default function SocialTrends() {
   const profile = (profiles ?? []).find((candidate) => candidate.id === profileId) ?? null;
   // Sin fuentes activas no hay de dónde traer señales: es el paso que desbloquea esta pestaña.
   const sinFuentes = !!profile && profile.sources.filter((source) => source.enabled).length === 0;
-  const { data: platforms } = usePoll<PlatformDef[]>(() => socialApi.get("/platforms"), 300000);
+  const { data: platformsData } = usePoll<unknown>(() => socialApi.get("/platforms"), 300000);
+  // `GET /platforms` devuelve `{ platforms: [...] }`: se normaliza una sola vez acá.
+  const platforms = platformList(platformsData);
 
   const [minRelevance, setMinRelevance] = useState("1");
   const [days, setDays] = useState("30");
@@ -181,7 +184,7 @@ export default function SocialTrends() {
             const relevance = signal.relevance[0];
             const reach = topMetric(signal.metrics);
             const platformLabel =
-              platforms?.find((platform) => platform.key === signal.platform)?.label ?? signal.platform;
+              platforms.find((platform) => platform.key === signal.platform)?.label ?? signal.platform;
             return (
               <Card key={signal.id}>
                 <div className="flex flex-wrap items-start justify-between gap-2">

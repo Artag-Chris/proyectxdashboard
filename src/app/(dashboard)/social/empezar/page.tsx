@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { socialApi } from "@/lib/social-api";
 import { GoButton, SetupChecklist } from "@/lib/social-setup";
-import type { PlatformDef, Profile } from "@/lib/social-types";
+import type { Profile } from "@/lib/social-types";
+import { platformList } from "@/lib/social-types";
 import { Button, Card, ErrorBox, Field, Input, OBJECTIVE_METRIC_LABEL, SectionTitle, Select, Textarea } from "@/lib/social-ui";
 import { usePoll } from "@/lib/usePoll";
 
@@ -38,7 +39,9 @@ export default function SocialStart() {
   const [objective, setObjective] = useState({ metric: "POSTS_PER_WEEK", target: "3", days: "90" });
   const [objectives, setObjectives] = useState<Array<{ metric: string; target: number }>>([]);
 
-  const { data: platforms } = usePoll<PlatformDef[]>(() => socialApi.get("/platforms"), 300000);
+  const { data: platformsData } = usePoll<unknown>(() => socialApi.get("/platforms"), 300000);
+  // `GET /platforms` devuelve `{ platforms: [...] }`: se normaliza una sola vez acá.
+  const platforms = platformList(platformsData);
 
   async function run(call: () => Promise<void>) {
     setBusy(true);
@@ -195,7 +198,7 @@ export default function SocialStart() {
                 value={accountForm.platform}
                 onChange={(event) => setAccountForm({ ...accountForm, platform: event.target.value })}
               >
-                {(platforms ?? []).map((platform) => (
+                {platforms.map((platform) => (
                   <option key={platform.key} value={platform.key}>
                     {platform.label}
                   </option>

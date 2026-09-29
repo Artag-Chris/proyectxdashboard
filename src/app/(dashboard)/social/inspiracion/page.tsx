@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { socialApi } from "@/lib/social-api";
-import type { PlatformDef, Profile, SignalListResponse } from "@/lib/social-types";
+import type { Profile, SignalListResponse } from "@/lib/social-types";
+import { platformList } from "@/lib/social-types";
 import {
   Button,
   Card,
@@ -30,7 +31,9 @@ import { usePoll } from "@/lib/usePoll";
 export default function SocialInspiration() {
   const { data: profiles } = usePoll<Profile[]>(() => socialApi.get("/profiles"), 60000);
   const { profileId, select } = useActiveProfile(profiles ?? []);
-  const { data: platforms } = usePoll<PlatformDef[]>(() => socialApi.get("/platforms"), 300000);
+  const { data: platformsData } = usePoll<unknown>(() => socialApi.get("/platforms"), 300000);
+  // `GET /platforms` devuelve `{ platforms: [...] }`: se normaliza una sola vez acá.
+  const platforms = platformList(platformsData);
 
   const [text, setText] = useState("");
   const [url, setUrl] = useState("");
@@ -127,7 +130,7 @@ export default function SocialInspiration() {
             <Field label="Red (opcional)">
               <Select value={platform} onChange={(event) => setPlatform(event.target.value)}>
                 <option value="">Sin red</option>
-                {(platforms ?? []).map((item) => (
+                {platforms.map((item) => (
                   <option key={item.key} value={item.key}>
                     {item.label}
                   </option>
