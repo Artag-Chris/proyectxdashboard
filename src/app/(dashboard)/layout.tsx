@@ -16,6 +16,7 @@ const navItems = [
   { href: "/growth", label: "Growth" },
   { href: "/cv", label: "CV Harness" },
   { href: "/social", label: "Social Coach" },
+  { href: "/docs", label: "Documentos" },
 ];
 
 export default function DashboardLayout({
