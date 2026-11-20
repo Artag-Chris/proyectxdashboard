@@ -144,6 +144,8 @@ export interface VacancyRow {
   duplicateCount?: number;
   /** Oferta pegada a mano (fuente sintética MANUAL), no scrapeada. */
   isManual?: boolean;
+  /** Procesada con respaldo determinístico (sin LLM / sin saldo / tope alcanzado). */
+  isFallback?: boolean;
 }
 
 export interface VacancyDetail {
@@ -203,6 +205,8 @@ export interface VacancyDetail {
   duplicateCount?: number;
   /** Oferta pegada a mano (fuente sintética MANUAL), no scrapeada. */
   isManual?: boolean;
+  /** Procesada con respaldo determinístico (sin LLM / sin saldo / tope alcanzado). */
+  isFallback?: boolean;
 }
 
 /** Respuesta de POST /vacancies/from-text (oferta pegada a mano). */
@@ -414,4 +418,63 @@ export interface NotificationRow {
 export interface AppConfig {
   autoResumeEnabled: boolean;
   dedupEnabled: boolean;
+  llmDailyTokenLimit?: number;
+  llmDailyUsdLimit?: number;
+  llmMaxOutputTokens?: number;
+}
+
+/** Respuesta de GET /usage (consumo de IA y tope diario). */
+export interface CvUsageSummary {
+  today: {
+    day: string;
+    calls: number;
+    tokensIn: number;
+    tokensOut: number;
+    totalTokens: number;
+    costUsd: number;
+    tokenLimit: number;
+    usdLimit: number;
+    remainingTokens: number | null;
+    remainingUsd: number | null;
+    budgetExceeded: boolean;
+    resetAt: string;
+  };
+  total: {
+    calls: number;
+    tokensIn: number;
+    tokensOut: number;
+    totalTokens: number;
+    costUsd: number;
+  };
+  byStage: {
+    stage: string;
+    calls: number;
+    tokensIn: number;
+    tokensOut: number;
+    totalTokens: number;
+    costUsd: number;
+  }[];
+  daily: {
+    day: string;
+    calls: number;
+    tokensIn: number;
+    tokensOut: number;
+    totalTokens: number;
+    costUsd: number;
+  }[];
+  config: {
+    provider: string;
+    model: string;
+    maxOutputTokens: number;
+    dailyTokenLimit: number;
+    dailyUsdLimit: number;
+  };
+}
+
+/** Respuesta de POST /profiles/:id/custom-resume (HV armada desde prompt libre). */
+export interface CustomResumeResponse {
+  profileId: string;
+  source: "ia" | "plantilla";
+  content: ResumeDraftContent;
+  note?: string;
 }

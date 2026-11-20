@@ -4,10 +4,34 @@ import Link from "next/link";
 import { cvApi } from "@/lib/cv-api";
 import { Card } from "@/lib/cv-ui";
 import { usePoll } from "@/lib/usePoll";
-import type { ProfileRow, SourceRow } from "@/lib/cv-types";
+import type { CvUsageSummary, ProfileRow, SourceRow } from "@/lib/cv-types";
 
 interface VacancyListResponse {
   total: number;
+}
+
+const STAGE_LABELS: Record<string, string> = {
+  normalize: "Normalización",
+  match: "Match",
+  resume: "Generar HV",
+  "custom-resume": "HV por prompt",
+  "cover-letter": "Carta",
+  refine: "Refinar HV",
+  translate: "Traducir",
+  ats: "Keywords ATS",
+  interview: "Entrevista",
+  import: "Importar CV",
+  probe: "Probe fuente",
+};
+
+function fmtTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
+}
+
+function fmtUsd(n: number): string {
+  return `$${n.toFixed(4)}`;
 }
 
 export default function CvOverview() {
@@ -20,6 +44,10 @@ export default function CvOverview() {
   const { data: unread } = usePoll<number>(
     () => cvApi.get("/notifications/unread-count"),
     15000,
+  );
+  const { data: usage } = usePoll<CvUsageSummary>(
+    () => cvApi.get("/usage"),
+    30000,
   );
 
   const resumesReady = (profiles ?? []).reduce(
@@ -89,6 +117,123 @@ export default function CvOverview() {
           </ol>
         </Card>
       </div>
+
+      {usage && (
+        <Card className="mt-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold text-emerald-700">
+                Consumo de IA y tope diario
+              </h2>
+              <p className="text-xs text-zinc-500">
+                Proveedor: <span className="font-medium text-zinc-700">{usage.config.provider}</span>{" "}
+                ({usage.config.model}) · reinicio diario 00:00 UTC · salida máx:{" "}
+                {usage.config.maxOutputTokens > 0
+                  ? `${usage.config.maxOutputTokens} tok`
+                  : "sin tope"}
+              </p>
+            </div>
+            {usage.today.budgetExceeded ? (
+              <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">
+                Tope alcanzado · respaldo determinístico hasta 00:00 UTC
+              </span>
+            ) : usage.today.tokenLimit > 0 || usage.today.usdLimit > 0 ? (
+              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                Dentro del tope diario
+              </span>
+            ) : (
+              <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600">
+                Sin tope diario configurado
+              </span>
+            )}
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-lg border border-zinc-100 bg-zinc-50 p-3">
+              <div className="text-xs text-zinc-500">Tokens hoy ({usage.today.day})</div>
+              <div className="mt-1 text-lg font-bold">
+                {fmtTokens(usage.today.totalTokens)}
+              </div>
+              <div className="text-[11px] text-zinc-500">
+                in {fmtTokens(usage.today.tokensIn)} · out {fmtTokens(usage.today.tokensOut)}
+              </div>
+            </div>
+            <div className="rounded-lg border border-zinc-100 bg-zinc-50 p-3">
+              <div className="text-xs text-zinc-500">Llamadas hoy</div>
+              <div className="mt-1 text-lg font-bold">{usage.today.calls}</div>
+              <div className="text-[11px] text-zinc-500">
+                acumulado: {usage.total.calls}
+              </div>
+            </div>
+            <div className="rounded-lg border border-zinc-100 bg-zinc-50 p-3">
+              <div className="text-xs text-zinc-500">Costo estimado hoy</div>
+              <div className="mt-1 text-lg font-bold">{fmtUsd(usage.today.costUsd)}</div>
+              <div className="text-[11px] text-zinc-500">
+                {usage.today.usdLimit > 0
+                  ? `tope: ${fmtUsd(usage.today.usdLimit)}`
+                  : "sin tope USD"}
+              </div>
+            </div>
+            <div className="rounded-lg border border-zinc-100 bg-zinc-50 p-3">
+              <div className="text-xs text-zinc-500">Acumulado histórico</div>
+              <div className="mt-1 text-lg font-bold">{fmtUsd(usage.total.costUsd)}</div>
+              <div className="text-[11px] text-zinc-500">
+                {fmtTokens(usage.total.totalTokens)} tokens
+              </div>
+            </div>
+          </div>
+
+          {usage.today.tokenLimit > 0 && (
+            <div className="mt-4">
+              <div className="mb-1 flex justify-between text-xs text-zinc-600">
+                <span>Tope diario de tokens</span>
+                <span>
+                  {fmtTokens(usage.today.totalTokens)} / {fmtTokens(usage.today.tokenLimit)} (
+                  {Math.min(
+                    100,
+                    Math.round((usage.today.totalTokens / usage.today.tokenLimit) * 100),
+                  )}
+                  %)
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100">
+                <div
+                  className={`h-full transition-all ${
+                    usage.today.budgetExceeded ? "bg-red-500" : "bg-emerald-500"
+                  }`}
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.round((usage.today.totalTokens / usage.today.tokenLimit) * 100),
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {usage.byStage.length > 0 && (
+            <div className="mt-4 border-t border-zinc-100 pt-3">
+              <div className="mb-1.5 text-xs font-medium text-zinc-500">
+                Desglose de hoy por etapa
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {usage.byStage.map((s) => (
+                  <span
+                    key={s.stage}
+                    className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs text-zinc-700"
+                  >
+                    <span className="font-medium">
+                      {STAGE_LABELS[s.stage] ?? s.stage}:
+                    </span>{" "}
+                    {s.calls}x · {fmtTokens(s.totalTokens)} tok ({fmtUsd(s.costUsd)})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

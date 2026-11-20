@@ -17,6 +17,8 @@ import type { ProfileRow, VacancyRow } from "@/lib/cv-types";
 interface ListResponse {
   rows: VacancyRow[];
   total: number;
+  /** Total sin aplicar el filtro de minScore (para avisar cuántas hay ocultas). */
+  unfilteredTotal?: number;
 }
 
 const STATUSES = ["ALL", "RAW", "NORMALIZED", "MATCHED", "RESUME_READY", "APPLIED", "IGNORED"];
@@ -38,7 +40,11 @@ export default function CvVacantes() {
 
   const { data: profiles } = usePoll<ProfileRow[]>(() => cvApi.get("/profiles"), 30000);
 
-  const effectiveMin = onlyGoodMatch ? Math.max(0, Number(minScore) || DEFAULT_MIN_SCORE) : null;
+  const isPreMatchStatus = status === "RAW" || status === "NORMALIZED";
+  const effectiveMin =
+    onlyGoodMatch && !isPreMatchStatus
+      ? Math.max(0, Number(minScore) || DEFAULT_MIN_SCORE)
+      : null;
   const params = new URLSearchParams({ status, limit: "100" });
   if (q) params.set("q", q);
   if (profileId) params.set("profileId", profileId);
@@ -55,6 +61,10 @@ export default function CvVacantes() {
   );
 
   const selectedProfile = (profiles ?? []).find((p) => p.id === profileId) ?? null;
+  const hiddenByScore =
+    effectiveMin !== null && data && typeof data.unfilteredTotal === "number"
+      ? Math.max(0, data.unfilteredTotal - data.total)
+      : 0;
 
   return (
     <div>
@@ -165,12 +175,29 @@ export default function CvVacantes() {
           />
           Ver duplicados
         </label>
-        <span className="text-xs text-zinc-400">
+        <button
+          type="button"
+          onClick={() => setOnlyGoodMatch((prev) => !prev)}
+          className={`rounded-lg border px-3 py-1 text-xs font-medium transition-colors ${
+            onlyGoodMatch
+              ? "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+              : "border-zinc-300 bg-zinc-900 text-white hover:bg-zinc-800"
+          }`}
+        >
           {onlyGoodMatch
-            ? selectedProfile
-              ? `Se ocultan las vacantes que no llegan al ${effectiveMin}% para ${selectedProfile.name}.`
-              : "Se ocultan las vacantes sin match suficiente (y las aún no analizadas)."
-            : "Mostrando todo lo scrapeado, incluido lo que no encaja con tus perfiles."}
+            ? hiddenByScore > 0
+              ? `Ver todo sin filtro (+${hiddenByScore} ocultas)`
+              : "Ver todo lo scrapeado (sin filtro)"
+            : "Viendo todo sin filtro · volver a buen match"}
+        </button>
+        <span className="text-xs text-zinc-400">
+          {isPreMatchStatus
+            ? `En estado ${status} no se aplica el filtro de score.`
+            : onlyGoodMatch
+              ? selectedProfile
+                ? `Se ocultan las vacantes que no llegan al ${effectiveMin}% para ${selectedProfile.name}.`
+                : "Se ocultan las vacantes sin match suficiente (y las aún no analizadas)."
+              : "Mostrando todo lo scrapeado, incluidas las ofertas básicas sin IA."}
         </span>
       </div>
 
@@ -194,6 +221,14 @@ export default function CvVacantes() {
                   {v.isManual && (
                     <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
                       Manual
+                    </span>
+                  )}
+                  {(v.isFallback || v.status === "RAW") && (
+                    <span
+                      title="Procesada con datos básicos del scraping (sin análisis de IA)"
+                      className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
+                    >
+                      Sin IA
                     </span>
                   )}
                   {v.isDuplicate && (
@@ -271,13 +306,30 @@ export default function CvVacantes() {
           </div>
         ))}
         {data && data.rows.length === 0 && (
-          <p className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-400">
-            {onlyGoodMatch
-              ? `Ninguna vacante llega al ${effectiveMin}% de match${
-                  selectedProfile ? ` para ${selectedProfile.name}` : ""
-                }. Destildá «Solo buen match» para ver todo lo scrapeado.`
-              : "Sin vacantes con este filtro. Dispará una fuente o esperá el cron del perfil."}
-          </p>
+          <div className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500">
+            <p>
+              {onlyGoodMatch && !isPreMatchStatus
+                ? hiddenByScore > 0
+                  ? `Ninguna vacante llega al ${effectiveMin}% de match${
+                      selectedProfile ? ` para ${selectedProfile.name}` : ""
+                    }, pero hay ${hiddenByScore} vacantes scrapeadas ocultas por este filtro.`
+                  : `Ninguna vacante llega al ${effectiveMin}% de match${
+                      selectedProfile ? ` para ${selectedProfile.name}` : ""
+                    }.`
+                : "Sin vacantes con este filtro. Dispará una fuente o esperá el cron del perfil."}
+            </p>
+            {onlyGoodMatch && !isPreMatchStatus && (
+              <button
+                type="button"
+                onClick={() => setOnlyGoodMatch(false)}
+                className="mt-3 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-700"
+              >
+                {hiddenByScore > 0
+                  ? `Ver las ${hiddenByScore} vacantes sin filtro`
+                  : "Ver todo lo scrapeado (sin filtro)"}
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>
