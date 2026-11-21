@@ -69,9 +69,13 @@ const mangled = ['P R OY EC TO S', 'E X P E R I E N C I A', 'H A B I L I D A D E
 );
 check(!mangled, `un encabezado sale troceado al extraerlo ("${mangled}")`);
 
-// 4. El modo heredado conserva sus encabezados y NO usa los estándar.
+// 4. El modo de dos columnas también usa encabezados en el idioma del CV
+//    (no deben filtrarse los títulos heredados en inglés en un CV en español).
 for (const heading of LEGACY_ONLY) {
-  check(legacyText.includes(heading), `el modo heredado perdió el encabezado "${heading}"`);
+  check(!legacyText.includes(heading), `el modo dos columnas filtró encabezado en inglés "${heading}"`);
+}
+for (const heading of ['PERFIL PROFESIONAL', 'EXPERIENCIA PROFESIONAL', 'EDUCACIÓN', 'PROYECTOS']) {
+  check(legacyText.includes(heading), `el modo dos columnas no expone el encabezado "${heading}"`);
 }
 
 // 5. Contacto: en modo ATS el email debe ser reconocible por regex y el teléfono

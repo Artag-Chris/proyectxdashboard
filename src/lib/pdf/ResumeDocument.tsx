@@ -357,23 +357,23 @@ export function ResumeDocument({ data }: { data: ResumePdfData }) {
             <>
               <View style={styles.columns}>
                 <View style={styles.mainCol}>
-                  <SummarySection text={summary} heading="About me" />
+                  <SummarySection text={summary} heading={headings.summary} />
                   <ExperienceSection
                     experience={experience}
-                    heading="Work experience in time"
+                    heading={headings.experience}
                   />
-                  <LanguagesSection languages={languages} heading="Languages" />
+                  <LanguagesSection languages={languages} heading={headings.languages} />
                 </View>
 
                 <View style={styles.sideCol}>
-                  <EducationSection education={education} heading="Academic background" />
-                  <SoftSkillsSection softSkills={softSkills} heading="Soft skills" />
+                  <EducationSection education={education} heading={headings.education} />
+                  <SoftSkillsSection softSkills={softSkills} heading={headings.softSkills} />
                   <QrBlock qrDataUrl={qrDataUrl} qrLabel={qrLabel} />
                 </View>
               </View>
 
-              <SkillsSection skills={skills} heading="Technical skills" inline={false} />
-              <ProjectsSection projects={projects} heading="Work experience" />
+              <SkillsSection skills={skills} heading={headings.skills} inline={false} />
+              <ProjectsSection projects={projects} heading={headings.projects} />
             </>
           )}
         </View>
